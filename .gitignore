@@ -1,0 +1,16 @@
+# Тексты корпуса не коммитятся: их собирает tools/fetch_corpus.py по manifest.json.
+corpus/text/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.pytest-tmp/
+
+# Node
+node_modules/
+
+# Служебное
+.tmp/
+*.log

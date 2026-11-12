@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "enabled": true,
+  "strict": true,
+  "defaultProfile": "chat_answer",
+  "profiles": {
+    "prose_narrative": true,
+    "prose_essay": true,
+    "technical_doc": true,
+    "business_letter": true,
+    "chat_answer": true
+  },
+  "layers": {
+    "central": true,
+    "language": true,
+    "composition": true,
+    "author": true,
+    "classification": true,
+    "corpus": true
+  },
+  "margin": 0.15,
+  "gate": {
+    "beforeDocument": true,
+    "beforeAnswer": true,
+    "minWordsForCheck": 60
+  },
+  "changedAt": "2026-11-13T02:30:00+03:00",
+  "changedBy": "lead"
+}

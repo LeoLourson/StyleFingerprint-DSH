@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "updated": "2026-11-13",
+  "profiles": {
+    "chat_answer": {
+      "title": "Ответ в диалоге",
+      "width": "1-3 абзаца, без заголовков и списков, если нет перечня однотипных вещей",
+      "layers": ["central", "language"],
+      "templates": ["templates/answer.md"],
+      "targets": "chat_answer"
+    },
+    "technical_doc": {
+      "title": "Технический документ",
+      "width": "по шаблону; раздел — один тезис и его опора",
+      "layers": ["central", "composition", "language", "classification"],
+      "templates": ["templates/report.md", "templates/readme.md", "templates/plan.md", "templates/spec.md"],
+      "targets": "technical_doc"
+    },
+    "business_letter": {
+      "title": "Деловое письмо и сообщение",
+      "width": "1-2 абзаца: что нужно, к какому сроку, что будет при отказе",
+      "layers": ["central", "language"],
+      "templates": ["templates/letter.md", "templates/commit.md"],
+      "targets": "business_letter"
+    },
+    "prose_essay": {
+      "title": "Эссе, объяснение, публичный текст",
+      "width": "абзацы 3-6 предложений, длина фразы по отпечатку",
+      "layers": ["central", "composition", "language", "author", "corpus"],
+      "templates": ["templates/essay.md"],
+      "targets": "prose_essay"
+    },
+    "prose_narrative": {
+      "title": "Художественная проза",
+      "width": "сцена, деталь, действие; обобщение только после сцены",
+      "layers": ["central", "composition", "language", "author", "corpus"],
+      "templates": ["templates/scene.md"],
+      "targets": "prose_narrative"
+    }
+  },
+  "genreMap": {
+    "answer": "chat_answer",
+    "reply": "chat_answer",
+    "report": "technical_doc",
+    "readme": "technical_doc",
+    "doc": "technical_doc",
+    "spec": "technical_doc",
+    "plan": "technical_doc",
+    "article": "prose_essay",
+    "essay": "prose_essay",
+    "explanation": "prose_essay",
+    "letter": "business_letter",
+    "email": "business_letter",
+    "commit": "business_letter",
+    "message": "business_letter",
+    "fiction": "prose_narrative",
+    "scene": "prose_narrative",
+    "story": "prose_narrative"
+  },
+  "defaults": {
+    "enabled": true,
+    "strict": true,
+    "defaultProfile": "chat_answer",
+    "margin": 0.15,
+    "gate": {
+      "beforeDocument": true,
+      "beforeAnswer": true,
+      "minWordsForCheck": 60
+    }
+  }
+}
