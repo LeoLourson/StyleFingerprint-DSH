@@ -1,10 +1,10 @@
 {
-  "version": 1,
+  "version": 2,
   "updated": "2026-11-13",
   "profiles": {
     "chat_answer": {
       "title": "Ответ в диалоге",
-      "width": "1-3 абзаца, без заголовков и списков, если нет перечня однотипных вещей",
+      "width": "1-3 абзаца; заголовки и списки только для перечня однотипных вещей",
       "layers": ["central", "language"],
       "templates": ["templates/answer.md"],
       "targets": "chat_answer"
@@ -13,29 +13,29 @@
       "title": "Технический документ",
       "width": "по шаблону; раздел — один тезис и его опора",
       "layers": ["central", "composition", "language", "classification"],
-      "templates": ["templates/report.md", "templates/readme.md", "templates/plan.md", "templates/spec.md"],
+      "templates": ["templates/report.md", "templates/readme.md", "templates/plan.md"],
       "targets": "technical_doc"
     },
     "business_letter": {
       "title": "Деловое письмо и сообщение",
       "width": "1-2 абзаца: что нужно, к какому сроку, что будет при отказе",
       "layers": ["central", "language"],
-      "templates": ["templates/letter.md", "templates/commit.md"],
+      "templates": ["templates/letter.md"],
       "targets": "business_letter"
     },
     "prose_essay": {
       "title": "Эссе, объяснение, публичный текст",
-      "width": "абзацы 3-6 предложений, длина фразы по отпечатку",
+      "width": "абзацы 3-6 предложений, длина фразы по целям профиля",
       "layers": ["central", "composition", "language", "author", "corpus"],
       "templates": ["templates/essay.md"],
       "targets": "prose_essay"
     },
-    "prose_narrative": {
-      "title": "Художественная проза",
-      "width": "сцена, деталь, действие; обобщение только после сцены",
-      "layers": ["central", "composition", "language", "author", "corpus"],
-      "templates": ["templates/scene.md"],
-      "targets": "prose_narrative"
+    "math_paper": {
+      "title": "Математическая статья",
+      "width": "теорема, доказательство, определение; формулы не переписываются словами",
+      "layers": ["central", "composition", "language", "math"],
+      "templates": ["templates/math-article.md"],
+      "targets": "math_paper"
     }
   },
   "genreMap": {
@@ -46,22 +46,23 @@
     "doc": "technical_doc",
     "spec": "technical_doc",
     "plan": "technical_doc",
+    "letter": "business_letter",
+    "email": "business_letter",
+    "message": "business_letter",
     "article": "prose_essay",
     "essay": "prose_essay",
     "explanation": "prose_essay",
-    "letter": "business_letter",
-    "email": "business_letter",
-    "commit": "business_letter",
-    "message": "business_letter",
-    "fiction": "prose_narrative",
-    "scene": "prose_narrative",
-    "story": "prose_narrative"
+    "math": "math_paper",
+    "math-article": "math_paper",
+    "paper": "math_paper"
   },
+  "layers": ["central", "language", "composition", "author", "classification", "corpus", "math"],
   "defaults": {
     "enabled": true,
     "strict": true,
     "defaultProfile": "chat_answer",
     "margin": 0.15,
+    "author": "both",
     "gate": {
       "beforeDocument": true,
       "beforeAnswer": true,

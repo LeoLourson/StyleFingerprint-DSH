@@ -1,14 +1,14 @@
 {
-  "version": 1,
+  "version": 2,
   "enabled": true,
   "strict": true,
   "defaultProfile": "chat_answer",
   "profiles": {
-    "prose_narrative": true,
-    "prose_essay": true,
+    "chat_answer": true,
     "technical_doc": true,
     "business_letter": true,
-    "chat_answer": true
+    "prose_essay": true,
+    "math_paper": true
   },
   "layers": {
     "central": true,
@@ -16,14 +16,18 @@
     "composition": true,
     "author": true,
     "classification": true,
-    "corpus": true
+    "corpus": true,
+    "math": true
   },
   "margin": 0.15,
+  "author": "both",
+  "pythonPath": "",
+  "metricTargets": {},
   "gate": {
     "beforeDocument": true,
     "beforeAnswer": true,
     "minWordsForCheck": 60
   },
-  "changedAt": "2026-11-13T02:30:00+03:00",
+  "changedAt": "2026-11-13T02:50:00+03:00",
   "changedBy": "lead"
 }
