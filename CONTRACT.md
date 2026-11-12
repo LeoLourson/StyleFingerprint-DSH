@@ -171,6 +171,30 @@ rules: [R-LANG-01]
 `letter.md`, `math-article.md`. Каждый: паспорт (`id`, `profile`, `audience`, `length`),
 скелет с слотами, порядок работы, чек-лист, ссылки на правила.
 
+### Распределение номеров правил
+
+Файл слоя — единственный владелец своего диапазона; номер внутри диапазона не
+переиспользуется после снятия правила. Ссылка `ref` в `data/rules.json` указывает на
+существующий номер.
+
+| Файл | Слой | Номера |
+|---|---|---|
+| `law/00-central.md` | `law` | без номеров, проверки называются словами |
+| `law/10-write-for-outsider.md` | `language` | `R-LAW-01…19` |
+| `law/30-language.md` | `language` | `R-LANG-01…39` |
+| `law/20-composition.md` | `composition` | `R-COMP-01…19` |
+| `law/40-author-voice.md` | `author` | `R-AUTH-01…09` |
+| `law/45-russian-prose.md` | `corpus` | `R-CORP-01…09` |
+| `law/50-classification.md` | `classification` | `R-CLASS-01…09` |
+| `law/55-math-article.md` | `math` | `R-MATH-01…19` |
+
+### Профили в правиле
+
+`profiles: ["*"]` означает «все профили» и допускается только у правил, у которых нет
+нормы по профилю: `kind: "forbidden"` и `kind: "manual"`. У `kind: "regex"` и
+`kind: "metric"` профили перечисляются явно: норма `max` у профилей разная, и «*»
+скрыл бы эту разницу.
+
 ## 6. Движок метрик и мост
 
 `tools/analyze.py` — единственная реализация метрик (pymorphy3 + natasha). Режимы:
