@@ -1792,6 +1792,24 @@ const TOOL = {
 /** Facts the actions read from the running plugin rather than from a file. */
 const runtime = { gatewayAvailable: false };
 
+/**
+ * Run `mount` once the named service exists, and never before.
+ *
+ * `skills` and `webServer` start later than this plugin, so `ctx.get` at apply
+ * time answers undefined and the registration would be lost for the whole run.
+ * A service named in `inject` would instead hold the whole plugin back in a
+ * profile that has no such service — a headless run has no `webServer` — so the
+ * service is reached through `ctx.inject`, which activates the mount when the
+ * service appears and leaves the rest of the plugin working without it.
+ */
+function whenService(ctx, name, mount) {
+  if (typeof ctx.inject === 'function') {
+    ctx.inject([name], (scope) => { mount(scope); });
+    return;
+  }
+  mount(ctx);
+}
+
 export function apply(ctx) {
   let gatewayAvailable = false;
 
@@ -1809,53 +1827,41 @@ export function apply(ctx) {
     return () => dispose();
   }, 'style-fingerprint: prompt section');
 
-  ctx.effect(() => {
-    let skills = ctx.skills;
-    if (!skills && typeof ctx.get === 'function') {
-      try {
-        skills = ctx.get('skills');
-      } catch {
-        skills = undefined;
-      }
-    }
-    if (!skills || typeof skills.register !== 'function') return () => {};
-    const dispose = skills.register({
-      name: 'style',
-      description: 'Русский текст для человека вне контекста: brief перед документом, check перед ответом, guide по слоям закона, corpus по образцам.',
-      content: SKILL_CONTENT,
-      source: 'runtime',
-    });
-    return () => { if (typeof dispose === 'function') dispose(); };
-  }, 'style-fingerprint: skills');
+  whenService(ctx, 'skills', (scope) => {
+    scope.effect(() => {
+      const skills = typeof scope.get === 'function' ? scope.get('skills', false) : undefined;
+      if (!skills || typeof skills.register !== 'function') return () => {};
+      const dispose = skills.register({
+        name: 'style',
+        description: 'Русский текст для человека вне контекста: brief перед документом, check перед ответом, guide по слоям закона, corpus по образцам.',
+        content: SKILL_CONTENT,
+        source: 'runtime',
+      });
+      return () => { if (typeof dispose === 'function') dispose(); };
+    }, 'style-fingerprint: skills');
+  });
 
-  ctx.effect(() => {
-    let server;
-    if (typeof ctx.get === 'function') {
-      try {
-        server = ctx.get('webServer');
-      } catch {
-        server = undefined;
-      }
-    }
-    if (!server || typeof server.register !== 'function') return () => {};
-    const gateway = createGateway();
-    const dispose = server.register({ kind: 'prefix', path: gateway.path, resource: (request) => gateway.handler(request) });
-    gatewayAvailable = true;
-    runtime.gatewayAvailable = true;
-    return () => {
-      gatewayAvailable = false;
-      runtime.gatewayAvailable = false;
-      dispose();
-    };
-  }, 'style-fingerprint: page route');
+  whenService(ctx, 'webServer', (scope) => {
+    scope.effect(() => {
+      const server = typeof scope.get === 'function' ? scope.get('webServer', false) : undefined;
+      if (!server || typeof server.register !== 'function') return () => {};
+      const gateway = createGateway();
+      const dispose = server.register({ kind: 'prefix', path: gateway.path, resource: (request) => gateway.handler(request) });
+      gatewayAvailable = true;
+      runtime.gatewayAvailable = true;
+      return () => {
+        gatewayAvailable = false;
+        runtime.gatewayAvailable = false;
+        dispose();
+      };
+    }, 'style-fingerprint: page route');
+  });
 
   ctx.effect(() => () => { void closeEngine(); }, 'style-fingerprint: engine');
 
   if (typeof ctx.on === 'function') {
     ctx.on('dispose', () => { void closeEngine(); });
   }
-  // The route flag is read lazily by `config`, so a later registration is visible.
-  ctx.styleFingerprint = { gatewayAvailable: () => gatewayAvailable };
 }
 
 /** Internals pinned for the Node tests; not part of the plugin contract. */

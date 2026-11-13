@@ -34,7 +34,10 @@ function fakeContext() {
       return () => {};
     },
     on: () => () => {},
-    get: () => undefined,
+    // Cordis answers an optional lookup with undefined instead of throwing.
+    get: (name) => ctx[name],
+    // Every fake service is present at once, so the mount runs immediately.
+    inject: (names, callback) => { callback(ctx); },
   };
   return { ctx, tools, skills, sections, effects };
 }
