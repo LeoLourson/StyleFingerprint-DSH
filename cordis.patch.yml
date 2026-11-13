@@ -1,0 +1,7 @@
+# Самоактивация бандла. Хост-половина регистрирует инструмент `style`, раздел
+# системного промпта, входной скилл и мост к движку метрик; клиентскую половину
+# (страницу настроек) Composer находит по `dsh.client` в package.json.
+- insert:
+    - id: style-fingerprint
+      name: dsh-style-fingerprint
+      config: {}

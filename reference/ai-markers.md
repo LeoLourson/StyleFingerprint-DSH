@@ -6,10 +6,12 @@
 
 Как читать:
 
-- **Запрет** срабатывает на любое вхождение, профиль помечен `*`. Проверка не считает
-  частоту: одно вхождение — один дефект.
-- **Норма** задаёт `max` на 1000 слов. Число в скобках — замер на образцах из
-  `corpus/text/**` (5441 абзац, 265 997 слов). Все значения ниже порога 1 % абзацев.
+- **Запрет** (`kind: "forbidden"`) срабатывает на любое вхождение, профиль помечен `*`.
+- **Плотностная норма** (`units: "per1000"`) задаёт `max` вхождений на 1000 слов: одно
+  совпадение в коротком тексте не запрещено, дефект начинается с превышения плотности.
+- **Абсолютная норма** (`units: "count"`, `max: 0`) — дефект уже первое вхождение:
+  оценка без меры, второй маркер неуверенности, «тот факт, что», зеркальная пара.
+- Числа — замер на образцах из `corpus/text/**`; все значения ниже порога 1 % абзацев.
 - **Чек-лист** в конце файла перечисляет свойства, которые нельзя проверить строкой или
   числом; в правилах `rules.json` их нет, решение принимает человек.
 - Регулярное выражение не знает о кавычках и коде. Инструмент обязан маскировать цитаты,
@@ -56,7 +58,7 @@
 |---|---|---|---|---|
 | «Это не просто X, а Y», «Дело не в том, что», «Не столько…, сколько» | `(?<![а-яё])(это не просто|дело не в том, что|речь идёт не о том,|важно понимать: это не|не столько[^.!?]{1,60}сколько)(?![а-яё])` | R-LANG-09 | высокий: «не столько…, сколько» в прозе — настоящая градация; замер 0,11 % | назвать оппонента или оставить только Y |
 | «Как…, так и…», «Не только…, но и…» | `(?<![а-яё])(как [а-яё]+[^.!?]{0,40}, так и|не только[^.!?]{1,60}, но и)(?![а-яё])` | R-LANG-09 | высокий: «как…, так и» в прозе обычен; замер 0,70 % | «и»; оборот остаётся, если вторая часть неожиданна |
-| «С одной стороны… с другой стороны» | `(?<![а-яё])с одной стороны[\s\S]{0,400}с другой стороны` | R-LANG-09 | средний: настоящая антитеза в прозе; замер 0,04 % | «но» или «за счёт» |
+| «С одной стороны… с другой стороны» | `(?<![а-яё])с одной стороны[\s\S]{0,400}с другой стороны` | R-LANG-09 | средний: настоящая антитеза в прозе; абсолютная норма, замер 0,04 % | «но» или «за счёт» |
 | Тройка однородных оценок | нет: нужен разбор однородных членов | R-LANG-09 | — | оставить столько пунктов, сколько их в предмете |
 | Анафора: три предложения с одним началом | нет: нужен разбор повторов | R-LANG-09 | — | слить в одно предложение |
 
@@ -71,7 +73,7 @@
 
 | Маркер | Regex | R-* | Риск ложного срабатывания | Что делать |
 |---|---|---|---|---|
-| Два маркера неуверенности на одно утверждение | `(?<![а-яё])(возможно|вероятно|по-видимому|скорее всего|можно предположить)[^.!?]{0,60}(возможно|вероятно|по-видимому|скорее всего|можно предположить)(?![а-яё])` | R-LANG-03 | низкий: замер 0 % | один маркер |
+| Два маркера неуверенности на одно утверждение | `(?<![а-яё])(возможно|вероятно|по-видимому|скорее всего|можно предположить)[^.!?]{0,60}(возможно|вероятно|по-видимому|скорее всего|можно предположить)(?![а-яё])` | R-LANG-03 | низкий: абсолютная норма, замер 0 % | один маркер |
 | «Насколько я понимаю», «Возможно, я ошибаюсь» | `(?<![а-яё])(насколько я понимаю|возможно, я ошибаюсь|если я не ошибаюсь|я могу ошибаться|как мне кажется)(?![а-яё])` | R-LANG-03 | нет | прямое утверждение с основанием |
 | «Очевидно, что», «Нетрудно видеть», «Само собой разумеется» | `(?<![а-яё])(очевидно, что|нетрудно видеть|нетрудно заметить|само собой разумеется|не требует доказательств)(?![а-яё])` | R-LANG-03 | средний: «Очевидно, достаточно доказать…» вводит редукцию и остаётся | довод или снять слово |
 | «Вряд ли», «Едва ли» в утверждении | нет: нужен смысл утверждения | R-LANG-03 | — | точное отрицание с причиной |
@@ -84,7 +86,7 @@
 | «Является», «Представляет собой», «Выступает в качестве» | `(?<![а-яё])(является|представляет собой|представляют собой|выступает в качестве|служит (основой|примером|причиной|источником|началом))(?![а-яё])` | R-LANG-05 | средний: «является» при отрицании и в значении «появляется»; замер 0,04 % | тире, краткая форма, глагол |
 | «Данный», «Указанный», «Вышеупомянутый» | `(?<![а-яё])(данный|данная|данное|данные|данного|данной|данных|данным|данными|указанный|указанная|указанное|указанные|вышеупомянутый|вышеуказанный)(?![а-яё])` | R-LAW-05 | низкий: «в данный момент» и «данные» как существительное; замер 0,11 % | имя, номер, ссылка |
 | «В рамках», «На основе», «При наличии», «Исходя из» | `(?<![а-яё])(в рамках|в контексте|в свете|в отношении|по отношению к|при наличии|при отсутствии|на основе|на базе|исходя из|в целях)(?![а-яё])` | R-LANG-19 | средний: математические обороты; замер 0,39 % | простой предлог |
-| «Тот факт, что», «В силу того, что», «Вследствие того, что» | `(?<![а-яё])(тот факт, что|в силу того, что|вследствие того, что|принимая во внимание тот факт|в связи с тем, что|по причине того, что)(?![а-яё])` | R-LANG-07 | низкий | «поскольку», «так как» |
+| «Тот факт, что», «В силу того, что», «Вследствие того, что» | `(?<![а-яё])(тот факт, что|в силу того, что|вследствие того, что|принимая во внимание тот факт|в связи с тем, что|по причине того, что)(?![а-яё])` | R-LANG-07 | низкий: абсолютная норма, замер 0 % | «поскольку», «так как» |
 | «Имеет место быть», «Носит характер», «Отличный подход» | `(?<![а-яё])(имеет место быть|носит [а-яё]+ характер|является обоснованным|отличный подход|отличный метод|отличная идея)(?![а-яё])` | R-LANG-07 | низкий | прямое сказуемое, «иной подход» |
 | «Робастный», «Валидный», «Датасет», «Бенчмарк» | `(?<![а-яё])(робастн|валидн|релевантн|имплемент|дедлайн|перформанс|инсайт|челлендж|коммит|бенчмарк|датасет|пайплайн|апдейт|фидбек)(?![а-яё])` | R-LANG-15 | средний: термин, принятый в литературе, остаётся | русский термин |
 | «Грубо говоря», «По сути дела», «Проще говоря» | `(?<![а-яё])(грубо говоря|по сути дела|проще говоря|по большому счёту)(?![а-яё])` | R-LANG-11 | низкий | один регистр |
@@ -93,7 +95,7 @@
 
 | Маркер | Regex | R-* | Риск ложного срабатывания | Что делать |
 |---|---|---|---|---|
-| «Очень важный», «Играет ключевую роль», «Занимает центральное место» | `(?<![а-яё])(очень важн|крайне важн|весьма значительн|принципиальн|ключев|фундаментальн|недвусмысленн|играет ключевую роль|играет важную роль|занимает центральное место)` | R-LANG-01 | средний: «очень» — обычное наречие в прозе; замер 0,13 % | назвать меру |
+| «Очень важный», «Играет ключевую роль», «Занимает центральное место» | `(?<![а-яё])(очень важн|крайне важн|весьма значительн|принципиальн|ключев|фундаментальн|недвусмысленн|играет ключевую роль|играет важную роль|занимает центральное место)` | R-LANG-01 | средний: «очень важно» — обычная речь; абсолютная норма, замер 0,13 % | назвать меру |
 | «В значительной степени», «В полной мере», «В той или иной мере» | `(?<![а-яё])(в значительной степени|в полной мере|в достаточной мере|в определённой степени|в известной степени|в той или иной (мере|степени|форме)|в большей или меньшей степени)` | R-LANG-01 | средний: прямое значение «в полной мере» | число, диапазон, граница |
 | «Ряд вопросов», «Различные подходы», «При определённых условиях» | `(?<![а-яё])(ряд (вопросов|работ|авторов|причин|факторов|исследований|признаков|трудностей)|целый ряд|определённые (условия|трудности|факторы|обстоятельства)|те или иные|в той или иной|различные (подходы|авторы|варианты|методы))(?![а-яё])` | R-LANG-08 | средний: «ряд» как математический ряд | число, имена, ссылка |
 | «Открывает новые перспективы», «Вносит вклад», «Трудно переоценить» | `(?<![а-яё])(открывает новые перспективы|имеет (важное|определённое) значение|вносит (значительный|существенный) вклад|трудно переоценить|неотъемлемой частью|важным шагом в развитии)(?![а-яё])` | R-LANG-10 | низкий | снять или заменить конкретикой |
@@ -139,20 +141,29 @@
 
 Замер на `corpus/text/**`: 5441 абзац, 265 997 слов. Доля абзацев со срабатыванием:
 
-| Правило | Доля абзацев | Норма на 1000 слов | Серьёзность |
+| Правило | Доля абзацев | Норма в `rules.json` | Серьёзность |
 |---|---|---|---|
-| `lang.figure.quoting` | 0,70 % | — | warning |
-| `lang.officialese.preposition` | 0,39 % | 0,08 из 3 | error |
-| `lang.connective.empty` | 0,26 % | 0,06 из 2 | error |
-| `lang.amplifier.unmeasured` | 0,13 % | 0,03 из 1 | error |
-| `lang.officialese.demonstrative` | 0,11 % | 0,02 из 1 | warning |
-| `lang.figure.not-x-but-y` | 0,11 % | — | warning |
-| `lang.connective.chain` | 0,09 % | 0,02 из 2 | warning |
-| остальные 31 | 0,06 % и ниже | — | — |
+| `lang.figure.quoting` | 0,70 % | любое вхождение | warning |
+| `lang.officialese.preposition` | 0,39 % | ≤ 3 на 1000 слов | error |
+| `lang.connective.empty` | 0,26 % | ≤ 2 на 1000 слов | error |
+| `lang.amplifier.unmeasured` | 0,13 % | 0 вхождений (абсолютная) | error |
+| `lang.figure.not-x-but-y` | 0,11 % | любое вхождение | warning |
+| `lang.officialese.demonstrative` | 0,11 % | ≤ 1 на 1000 слов | warning |
+| `lang.connective.chain` | 0,09 % | ≤ 2 на 1000 слов | warning |
+| `lang.modal.obvious` | 0,06 % | любое вхождение | error |
+| остальные 30 | 0,04 % и ниже | — | — |
 
-Порог приёмки — 1 % абзацев на правило. Ни одно правило порог не превысило. Пометку
-`warning` получили правила, у которых совпадение чаще означает честный оборот, чем дефект:
-`lang.figure.quoting`, `lang.figure.not-x-but-y`, `lang.officialese.is`,
+Порог приёмки — 1 % абзацев на правило. Ни одно правило порог не превысило.
+
+Четыре правила переведены на абсолютную норму (`units: "count"`, `max: 0`): первое вхождение
+уже дефект. Замер по ним отдельно: `lang.amplifier.unmeasured` — 7 вхождений в 0,13 %
+абзацев; `lang.figure.side-pair` — 2 вхождения в 0,04 %; `lang.hedge.stacked` и
+`lang.calque.fact-that` — по 0. Порог 1 % здесь проверяет, что правило не ловит честную прозу
+постоянно; совпадения в прозе — обычные обороты XIX века, ради них правило и помножено на
+плотность не было.
+
+Пометку `warning` получили правила, у которых совпадение чаще означает честный оборот, чем
+дефект: `lang.figure.quoting`, `lang.figure.not-x-but-y`, `lang.officialese.is`,
 `lang.officialese.demonstrative`, `lang.intensifier.degree`, `lang.quantifier.vague`,
 `lang.figure.side-pair`, а также нормы частоты `lang.connective.chain`.
 
@@ -162,43 +173,43 @@
 называет `kind`, отдельного массива запретов нет. Свойства без машинной проверки перечислены
 разделом выше.
 
-| id правила | R-* | Вид | Серьёзность | Профили |
-|---|---|---|---|---|
-| `lang.connective.empty` | R-LANG-04 | норма | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.connective.chain` | R-LANG-04 | норма | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.officialese.is` | R-LANG-05 | норма | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.officialese.nominalization` | R-LANG-05 | норма | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.officialese.demonstrative` | R-LAW-05 | норма | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.officialese.preposition` | R-LANG-19 | норма | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.amplifier.unmeasured` | R-LANG-01 | норма | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.intensifier.degree` | R-LANG-01 | норма | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.hedge.stacked` | R-LANG-03 | норма | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.quantifier.vague` | R-LANG-08 | норма | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.calque.fact-that` | R-LANG-07 | норма | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
-| `lang.word.project-ban` | R-LANG-24 | запрет | error | все |
-| `lang.figure.side-pair` | R-LANG-09 | норма | warning | technical_doc, business_letter, prose_essay |
-| `lang.metatext.announce` | R-LANG-02 | запрет | error | все |
-| `lang.metatext.recap` | R-LANG-02 | запрет | error | все |
-| `lang.metatext.bridge` | R-LANG-02 | запрет | error | все |
-| `lang.ritual.open` | R-LANG-01 | запрет | error | все |
-| `lang.ritual.close` | R-LANG-10 | запрет | error | все |
-| `lang.cliche.time` | R-LANG-19 | запрет | error | все |
-| `lang.cliche.opportunity` | R-LANG-19 | запрет | error | все |
-| `lang.hedge.defensive` | R-LANG-03 | запрет | error | все |
-| `lang.modal.obvious` | R-LANG-03 | запрет | error | все |
-| `lang.figure.not-x-but-y` | R-LANG-09 | запрет | warning | все |
-| `lang.register.colloquial` | R-LANG-11 | запрет | error | все |
-| `lang.register.anglicism` | R-LANG-15 | запрет | error | все |
-| `lang.calque.excess` | R-LANG-07 | запрет | error | все |
-| `lang.calque.count-announce` | R-LANG-07 | запрет | error | все |
-| `lang.empty.pleonasm` | R-LANG-10 | запрет | error | все |
-| `lang.empty.promise` | R-LANG-10 | запрет | error | все |
-| `lang.wrapper.frame` | R-LANG-18 | запрет | error | все |
-| `lang.figure.quoting` | R-LANG-09 | запрет | warning | все |
-| `lang.typography.emoji` | R-LANG-18 | запрет | error | все |
-| `lang.typography.chat-md` | R-LANG-18 | запрет | error | все |
-| `comp.intro.actuality` | R-COMP-01 | запрет | error | все |
-| `comp.final.recap` | R-COMP-08 | запрет | error | все |
-| `math.cliche.ceremony` | R-LANG-19 | запрет | error | все |
-| `math.formula.outside` | R-MATH-12 | запрет | error | chat_answer, technical_doc, business_letter, prose_essay |
-| `math.personification` | R-LANG-07 | запрет | error | все |
+| id правила | R-* | Вид | Норма | Серьёзность | Профили |
+|---|---|---|---|---|---|
+| `lang.connective.empty` | R-LANG-04 | норма | ≤ 2 на 1000 слов | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.connective.chain` | R-LANG-04 | норма | ≤ 2 на 1000 слов | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.officialese.is` | R-LANG-05 | норма | ≤ 2 на 1000 слов | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.officialese.nominalization` | R-LANG-05 | норма | ≤ 1 на 1000 слов | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.officialese.demonstrative` | R-LAW-05 | норма | ≤ 1 на 1000 слов | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.officialese.preposition` | R-LANG-19 | норма | ≤ 3 на 1000 слов | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.amplifier.unmeasured` | R-LANG-01 | норма | 0 вхождений (абсолютная) | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.intensifier.degree` | R-LANG-01 | норма | ≤ 1 на 1000 слов | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.hedge.stacked` | R-LANG-03 | норма | 0 вхождений (абсолютная) | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.quantifier.vague` | R-LANG-08 | норма | ≤ 1 на 1000 слов | warning | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.calque.fact-that` | R-LANG-07 | норма | 0 вхождений (абсолютная) | error | chat_answer, technical_doc, business_letter, prose_essay, math_paper |
+| `lang.word.project-ban` | R-LANG-24 | запрет | любое вхождение | error | все |
+| `lang.figure.side-pair` | R-LANG-09 | норма | 0 вхождений (абсолютная) | warning | technical_doc, business_letter, prose_essay |
+| `lang.metatext.announce` | R-LANG-02 | запрет | любое вхождение | error | все |
+| `lang.metatext.recap` | R-LANG-02 | запрет | любое вхождение | error | все |
+| `lang.metatext.bridge` | R-LANG-02 | запрет | любое вхождение | error | все |
+| `lang.ritual.open` | R-LANG-01 | запрет | любое вхождение | error | все |
+| `lang.ritual.close` | R-LANG-10 | запрет | любое вхождение | error | все |
+| `lang.cliche.time` | R-LANG-19 | запрет | любое вхождение | error | все |
+| `lang.cliche.opportunity` | R-LANG-19 | запрет | любое вхождение | error | все |
+| `lang.hedge.defensive` | R-LANG-03 | запрет | любое вхождение | error | все |
+| `lang.modal.obvious` | R-LANG-03 | запрет | любое вхождение | error | все |
+| `lang.figure.not-x-but-y` | R-LANG-09 | запрет | любое вхождение | warning | все |
+| `lang.register.colloquial` | R-LANG-11 | запрет | любое вхождение | error | все |
+| `lang.register.anglicism` | R-LANG-15 | запрет | любое вхождение | error | все |
+| `lang.calque.excess` | R-LANG-07 | запрет | любое вхождение | error | все |
+| `lang.calque.count-announce` | R-LANG-07 | запрет | любое вхождение | error | все |
+| `lang.empty.pleonasm` | R-LANG-10 | запрет | любое вхождение | error | все |
+| `lang.empty.promise` | R-LANG-10 | запрет | любое вхождение | error | все |
+| `lang.wrapper.frame` | R-LANG-18 | запрет | любое вхождение | error | все |
+| `lang.figure.quoting` | R-LANG-09 | запрет | любое вхождение | warning | все |
+| `lang.typography.emoji` | R-LANG-18 | запрет | любое вхождение | error | все |
+| `lang.typography.chat-md` | R-LANG-18 | запрет | любое вхождение | error | все |
+| `comp.intro.actuality` | R-COMP-01 | запрет | любое вхождение | error | все |
+| `comp.final.recap` | R-COMP-08 | запрет | любое вхождение | error | все |
+| `math.cliche.ceremony` | R-LANG-19 | запрет | любое вхождение | error | все |
+| `math.formula.outside` | R-MATH-12 | запрет | любое вхождение | error | chat_answer, technical_doc, business_letter, prose_essay |
+| `math.personification` | R-LANG-07 | запрет | любое вхождение | error | все |
