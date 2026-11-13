@@ -1,0 +1,978 @@
+{
+ "version": 1,
+ "metrics": [
+  {
+   "id": "syntax.sent.len.mean",
+   "label": "Средняя длина предложения",
+   "unit": "words",
+   "needs": "none",
+   "group": "syntax",
+   "spec": "1.1"
+  },
+  {
+   "id": "syntax.sent.len.median",
+   "label": "Медиана длины предложения",
+   "unit": "words",
+   "needs": "none",
+   "group": "syntax",
+   "spec": "1.2"
+  },
+  {
+   "id": "syntax.sent.len.p90",
+   "label": "90-й процентиль длины предложения",
+   "unit": "words",
+   "needs": "none",
+   "group": "syntax",
+   "spec": "1.3"
+  },
+  {
+   "id": "syntax.sent.len.cv",
+   "label": "Коэффициент вариации длины предложений",
+   "unit": "ratio",
+   "needs": "none",
+   "group": "syntax",
+   "spec": "1.4"
+  },
+  {
+   "id": "syntax.sent.len.short.share",
+   "label": "Доля коротких предложений",
+   "unit": "share",
+   "needs": "none",
+   "group": "syntax",
+   "spec": "1.5"
+  },
+  {
+   "id": "syntax.sent.len.long.share",
+   "label": "Доля длинных предложений",
+   "unit": "share",
+   "needs": "none",
+   "group": "syntax",
+   "spec": "1.6"
+  },
+  {
+   "id": "syntax.sent.len.autocorr",
+   "label": "Автокорреляция соседних длин",
+   "unit": "ratio",
+   "needs": "none",
+   "group": "syntax",
+   "spec": "1.7"
+  },
+  {
+   "id": "syntax.clause.len.mean",
+   "label": "Средняя длина клаузы",
+   "unit": "words",
+   "needs": "syntax",
+   "group": "syntax",
+   "spec": "1.8"
+  },
+  {
+   "id": "syntax.clause.per.sent",
+   "label": "Клауз на предложение",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "syntax",
+   "spec": "1.9"
+  },
+  {
+   "id": "syntax.inversion.share",
+   "label": "Доля инверсии подлежащего и сказуемого",
+   "unit": "share",
+   "needs": "syntax",
+   "group": "syntax",
+   "spec": "1.10"
+  },
+  {
+   "id": "syntax.subject.first.share",
+   "label": "Доля предложений с подлежащим в начале",
+   "unit": "share",
+   "needs": "syntax",
+   "group": "syntax",
+   "spec": "1.11"
+  },
+  {
+   "id": "syntax.subject.absent.share",
+   "label": "Доля предложений без подлежащего",
+   "unit": "share",
+   "needs": "syntax",
+   "group": "syntax",
+   "spec": "1.12"
+  },
+  {
+   "id": "syntax.simple.share",
+   "label": "Доля простых предложений",
+   "unit": "share",
+   "needs": "syntax",
+   "group": "syntax",
+   "spec": "1.13"
+  },
+  {
+   "id": "syntax.predicate.nominal.share",
+   "label": "Доля именных сказуемых",
+   "unit": "share",
+   "needs": "syntax",
+   "group": "syntax",
+   "spec": "1.14"
+  },
+  {
+   "id": "syntax.verb.final.share",
+   "label": "Доля предложений с глаголом в конце",
+   "unit": "share",
+   "needs": "syntax",
+   "group": "syntax",
+   "spec": "1.15"
+  },
+  {
+   "id": "morph.noun.share",
+   "label": "Доля существительных",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.1"
+  },
+  {
+   "id": "morph.verb.share",
+   "label": "Доля глаголов",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.2"
+  },
+  {
+   "id": "morph.adj.share",
+   "label": "Доля прилагательных",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.3"
+  },
+  {
+   "id": "morph.adv.share",
+   "label": "Доля наречий и предикативов",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.4"
+  },
+  {
+   "id": "morph.pron.share",
+   "label": "Доля местоимений",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.5"
+  },
+  {
+   "id": "morph.num.share",
+   "label": "Доля числительных",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.6"
+  },
+  {
+   "id": "morph.func.share",
+   "label": "Доля служебных слов",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.7"
+  },
+  {
+   "id": "morph.verb.aspect.pf.share",
+   "label": "Доля глаголов совершенного вида",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.8"
+  },
+  {
+   "id": "morph.verb.mood.impr.share",
+   "label": "Доля глаголов в повелительном наклонении",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.9"
+  },
+  {
+   "id": "morph.verb.mood.indc.share",
+   "label": "Доля глаголов в изъявительном наклонении",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.10"
+  },
+  {
+   "id": "morph.verb.tense.past.share",
+   "label": "Доля глаголов в прошедшем времени",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.11"
+  },
+  {
+   "id": "morph.verb.tense.pres.share",
+   "label": "Доля глаголов в настоящем времени",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.12"
+  },
+  {
+   "id": "morph.participle.share",
+   "label": "Доля причастий",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.13"
+  },
+  {
+   "id": "morph.gerund.share",
+   "label": "Доля деепричастий",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "morphology",
+   "spec": "2.14"
+  },
+  {
+   "id": "depth.dep.mean",
+   "label": "Средняя глубина дерева",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.1"
+  },
+  {
+   "id": "depth.dep.max.mean",
+   "label": "Средняя максимальная глубина",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.2"
+  },
+  {
+   "id": "depth.sub.sent.share",
+   "label": "Доля предложений с подчинением",
+   "unit": "share",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.3"
+  },
+  {
+   "id": "depth.sub.per.sent",
+   "label": "Клаузальных зависимых на предложение",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.4"
+  },
+  {
+   "id": "depth.relcl.per.sent",
+   "label": "Относительных придаточных на предложение",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.5"
+  },
+  {
+   "id": "depth.advcl.per.sent",
+   "label": "Обстоятельственных придаточных на предложение",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.6"
+  },
+  {
+   "id": "depth.acl.per.sent",
+   "label": "Причастных и обособленных определений на предложение",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.7"
+  },
+  {
+   "id": "depth.ccomp.per.sent",
+   "label": "Дополнительных придаточных на предложение",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.8"
+  },
+  {
+   "id": "depth.parataxis.per.sent",
+   "label": "Вставных и присоединительных конструкций на предложение",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.9"
+  },
+  {
+   "id": "depth.coord.per.sent",
+   "label": "Однородных связей на предложение",
+   "unit": "ratio",
+   "needs": "syntax",
+   "group": "morphology.depth",
+   "spec": "3.10"
+  },
+  {
+   "id": "nominal.abstract.share",
+   "label": "Доля абстрактных существительных",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "nominal",
+   "spec": "4.1"
+  },
+  {
+   "id": "nominal.nominalization.per1000",
+   "label": "Номинализаций на 1000 слов",
+   "unit": "per1000",
+   "needs": "morphology",
+   "group": "nominal",
+   "spec": "4.2"
+  },
+  {
+   "id": "nominal.noun.verb.ratio",
+   "label": "Существительных на глагол",
+   "unit": "ratio",
+   "needs": "morphology",
+   "group": "nominal",
+   "spec": "4.3"
+  },
+  {
+   "id": "nominal.adj.noun.ratio",
+   "label": "Прилагательных на существительное",
+   "unit": "ratio",
+   "needs": "morphology",
+   "group": "nominal",
+   "spec": "4.4"
+  },
+  {
+   "id": "nominal.gen.chain.per1000",
+   "label": "Цепочек родительного падежа на 1000 слов",
+   "unit": "per1000",
+   "needs": "morphology",
+   "group": "nominal",
+   "spec": "4.5"
+  },
+  {
+   "id": "nominal.gen.share",
+   "label": "Доля существительных в родительном падеже",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "nominal",
+   "spec": "4.6"
+  },
+  {
+   "id": "discourse.cause.per1000",
+   "label": "Связок причины на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.1"
+  },
+  {
+   "id": "discourse.consequence.per1000",
+   "label": "Связок следствия на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.2"
+  },
+  {
+   "id": "discourse.contrast.per1000",
+   "label": "Связок противопоставления на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.3"
+  },
+  {
+   "id": "discourse.concession.per1000",
+   "label": "Связок уступки на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.4"
+  },
+  {
+   "id": "discourse.condition.per1000",
+   "label": "Связок условия на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.5"
+  },
+  {
+   "id": "discourse.spec.per1000",
+   "label": "Связок уточнения на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.6"
+  },
+  {
+   "id": "discourse.addition.per1000",
+   "label": "Связок добавления на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.7"
+  },
+  {
+   "id": "discourse.time.per1000",
+   "label": "Связок времени на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.8"
+  },
+  {
+   "id": "discourse.purpose.per1000",
+   "label": "Связок цели на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.9"
+  },
+  {
+   "id": "discourse.connective.per1000",
+   "label": "Связок всего на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.10"
+  },
+  {
+   "id": "discourse.connective.distinct",
+   "label": "Различных связок в тексте",
+   "unit": "count",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.11"
+  },
+  {
+   "id": "discourse.connective.diversity",
+   "label": "Разнообразие категорий связок",
+   "unit": "ratio",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.12"
+  },
+  {
+   "id": "discourse.empty.per1000",
+   "label": "Пустых вводных связок на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.13"
+  },
+  {
+   "id": "discourse.metatext.per1000",
+   "label": "Оборотов мета-текста на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.14"
+  },
+  {
+   "id": "discourse.anaphora.per.sent",
+   "label": "Доля предложений с анафорическим началом",
+   "unit": "share",
+   "needs": "none",
+   "group": "discourse",
+   "spec": "5.15"
+  },
+  {
+   "id": "narr.dialogue.sent.share",
+   "label": "Доля предложений с репликой",
+   "unit": "share",
+   "needs": "none",
+   "group": "narrative",
+   "spec": "6.1"
+  },
+  {
+   "id": "narr.dialogue.word.share",
+   "label": "Доля слов в репликах",
+   "unit": "share",
+   "needs": "none",
+   "group": "narrative",
+   "spec": "6.2"
+  },
+  {
+   "id": "narr.dialogue.reply.len.mean",
+   "label": "Средняя длина реплики",
+   "unit": "words",
+   "needs": "none",
+   "group": "narrative",
+   "spec": "6.3"
+  },
+  {
+   "id": "narr.speech.verb.per1000",
+   "label": "Глаголов речи на 1000 слов",
+   "unit": "per1000",
+   "needs": "morphology",
+   "group": "narrative",
+   "spec": "6.4"
+  },
+  {
+   "id": "narr.dialogue.speech.share",
+   "label": "Доля реплик с глаголом речи",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "narrative",
+   "spec": "6.5"
+  },
+  {
+   "id": "narr.scene.share",
+   "label": "Доля абзацев со сценой",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "narrative",
+   "spec": "6.6"
+  },
+  {
+   "id": "narr.time.marker.per1000",
+   "label": "Временных маркеров на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "narrative",
+   "spec": "6.7"
+  },
+  {
+   "id": "narr.perfect.past.share",
+   "label": "Доля глаголов совершенного вида в прошедшем",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "narrative",
+   "spec": "6.8"
+  },
+  {
+   "id": "narr.first.person.per1000",
+   "label": "Первого лица на 1000 слов",
+   "unit": "per1000",
+   "needs": "morphology",
+   "group": "narrative",
+   "spec": "6.9"
+  },
+  {
+   "id": "lexis.ttr.mattr",
+   "label": "MATTR: разнообразие лемм в окне 50 слов",
+   "unit": "ratio",
+   "needs": "morphology",
+   "group": "lexis",
+   "spec": "7.1"
+  },
+  {
+   "id": "lexis.hapax.share",
+   "label": "Доля одноразовых лемм",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "lexis",
+   "spec": "7.2"
+  },
+  {
+   "id": "lexis.yule.k",
+   "label": "K Юла",
+   "unit": "ratio",
+   "needs": "none",
+   "group": "lexis",
+   "spec": "7.3"
+  },
+  {
+   "id": "lexis.word.len.mean",
+   "label": "Средняя длина слова",
+   "unit": "mean",
+   "needs": "none",
+   "group": "lexis",
+   "spec": "7.4"
+  },
+  {
+   "id": "lexis.stopword.share",
+   "label": "Доля стоп-слов",
+   "unit": "share",
+   "needs": "none",
+   "group": "lexis",
+   "spec": "7.5"
+  },
+  {
+   "id": "lexis.repeat.window.share",
+   "label": "Доля повторов в окне 20 слов",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "lexis",
+   "spec": "7.6"
+  },
+  {
+   "id": "lexis.repeat.window.max",
+   "label": "Наибольшая частота леммы в окне 50 слов",
+   "unit": "count",
+   "needs": "morphology",
+   "group": "lexis",
+   "spec": "7.7"
+  },
+  {
+   "id": "punct.mark.per1000",
+   "label": "Знаков препинания на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.1"
+  },
+  {
+   "id": "punct.comma.per1000",
+   "label": "Запятых на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.2"
+  },
+  {
+   "id": "punct.dash.per1000",
+   "label": "Тире на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.3"
+  },
+  {
+   "id": "punct.colon.per1000",
+   "label": "Двоеточий на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.4"
+  },
+  {
+   "id": "punct.semicolon.per1000",
+   "label": "Точек с запятой на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.5"
+  },
+  {
+   "id": "punct.question.per1000",
+   "label": "Вопросительных знаков на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.6"
+  },
+  {
+   "id": "punct.exclam.per1000",
+   "label": "Восклицательных знаков на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.7"
+  },
+  {
+   "id": "punct.quote.per1000",
+   "label": "Пар кавычек на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.8"
+  },
+  {
+   "id": "punct.parenthesis.per1000",
+   "label": "Пар скобок на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.9"
+  },
+  {
+   "id": "punct.gap.mean",
+   "label": "Средний отрезок между знаками",
+   "unit": "words",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.10"
+  },
+  {
+   "id": "punct.dash.colon.ratio",
+   "label": "Тире на двоеточие",
+   "unit": "ratio",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.11"
+  },
+  {
+   "id": "punct.comma.per.sent",
+   "label": "Запятых на предложение",
+   "unit": "ratio",
+   "needs": "none",
+   "group": "punctuation",
+   "spec": "8.12"
+  },
+  {
+   "id": "para.len.mean",
+   "label": "Средняя длина абзаца",
+   "unit": "words",
+   "needs": "none",
+   "group": "paragraph",
+   "spec": "9.1"
+  },
+  {
+   "id": "para.len.median",
+   "label": "Медиана длины абзаца",
+   "unit": "words",
+   "needs": "none",
+   "group": "paragraph",
+   "spec": "9.2"
+  },
+  {
+   "id": "para.len.cv",
+   "label": "Коэффициент вариации длины абзацев",
+   "unit": "ratio",
+   "needs": "none",
+   "group": "paragraph",
+   "spec": "9.3"
+  },
+  {
+   "id": "para.sent.mean",
+   "label": "Предложений на абзац",
+   "unit": "ratio",
+   "needs": "none",
+   "group": "paragraph",
+   "spec": "9.4"
+  },
+  {
+   "id": "para.one.sent.share",
+   "label": "Доля абзацев из одного предложения",
+   "unit": "share",
+   "needs": "none",
+   "group": "paragraph",
+   "spec": "9.5"
+  },
+  {
+   "id": "style.intensifier.per1000",
+   "label": "Усилителей на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "style",
+   "spec": "10.1"
+  },
+  {
+   "id": "style.evaluative.per1000",
+   "label": "Оценочных слов на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "style",
+   "spec": "10.2"
+  },
+  {
+   "id": "style.hedge.per1000",
+   "label": "Хеджей на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "style",
+   "spec": "10.3"
+  },
+  {
+   "id": "style.modal.per1000",
+   "label": "Модальных слов на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "style",
+   "spec": "10.4"
+  },
+  {
+   "id": "style.passive.share",
+   "label": "Доля пассивных глагольных форм",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "style",
+   "spec": "10.5"
+  },
+  {
+   "id": "style.cliche.per1000",
+   "label": "Канцелярских клише на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "style",
+   "spec": "10.6"
+  },
+  {
+   "id": "style.metatext.per1000",
+   "label": "Мета-текста на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "style",
+   "spec": "10.7"
+  },
+  {
+   "id": "style.colloquial.per1000",
+   "label": "Разговорных слов на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "style",
+   "spec": "10.8"
+  },
+  {
+   "id": "style.particle.per1000",
+   "label": "Частиц на 1000 слов",
+   "unit": "per1000",
+   "needs": "morphology",
+   "group": "style",
+   "spec": "10.9"
+  },
+  {
+   "id": "style.pron.1st.per1000",
+   "label": "Первого лица на 1000 слов",
+   "unit": "per1000",
+   "needs": "morphology",
+   "group": "style",
+   "spec": "10.10"
+  },
+  {
+   "id": "style.pron.2nd.per1000",
+   "label": "Второго лица на 1000 слов",
+   "unit": "per1000",
+   "needs": "morphology",
+   "group": "style",
+   "spec": "10.11"
+  },
+  {
+   "id": "style.bookish.per1000",
+   "label": "Книжных оборотов на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "style",
+   "spec": "10.12"
+  },
+  {
+   "id": "style.adj.long.share",
+   "label": "Доля длинных прилагательных",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "style",
+   "spec": "10.13"
+  },
+  {
+   "id": "style.noun.long.share",
+   "label": "Доля длинных существительных",
+   "unit": "share",
+   "needs": "morphology",
+   "group": "style",
+   "spec": "10.14"
+  },
+  {
+   "id": "style.sent.start.prep.share",
+   "label": "Доля предложений с предлогом в начале",
+   "unit": "share",
+   "needs": "syntax",
+   "group": "style",
+   "spec": "10.15"
+  },
+  {
+   "id": "ai.marker.per1000",
+   "label": "Словаря ИИ на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.1"
+  },
+  {
+   "id": "ai.metatext.per1000",
+   "label": "Мета-текста ИИ на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.2"
+  },
+  {
+   "id": "ai.ritual.per1000",
+   "label": "Ритуальных оборотов на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.3"
+  },
+  {
+   "id": "ai.address.per1000",
+   "label": "Обращений к читателю на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.4"
+  },
+  {
+   "id": "ai.notxbuty.per1000",
+   "label": "Конструкций «не X, а Y» на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.5"
+  },
+  {
+   "id": "ai.bold.per1000",
+   "label": "Жирных выделений на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.6"
+  },
+  {
+   "id": "ai.heading.per1000",
+   "label": "Заголовков разметки на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.7"
+  },
+  {
+   "id": "ai.bullet.per1000",
+   "label": "Пунктов списка на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.8"
+  },
+  {
+   "id": "ai.emoji.per1000",
+   "label": "Эмодзи на 1000 слов",
+   "unit": "per1000",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.9"
+  },
+  {
+   "id": "ai.list.ratio",
+   "label": "Доля строк-пунктов списка",
+   "unit": "ratio",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.10"
+  },
+  {
+   "id": "ai.sent.len.uniform.share",
+   "label": "Доля фраз одной длины",
+   "unit": "share",
+   "needs": "none",
+   "group": "ai",
+   "spec": "11.11"
+  },
+  {
+   "id": "ai.triple.share",
+   "label": "Доля троек в однородных рядах",
+   "unit": "share",
+   "needs": "syntax",
+   "group": "ai",
+   "spec": "11.12"
+  }
+ ],
+ "groups": {
+  "syntax": "Длина и ритм фраз",
+  "morphology": "Части речи и формы",
+  "morphology.depth": "Глубина и тип подчинения",
+  "nominal": "Абстрактные существительные и номинализации",
+  "discourse": "Связки и связность",
+  "narrative": "Диалог и повествование",
+  "lexis": "Словарный состав",
+  "punctuation": "Пунктуация",
+  "paragraph": "Абзацы",
+  "style": "Стилевые признаки",
+  "ai": "Маркеры ИИ-текста"
+ }
+}

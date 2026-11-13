@@ -1,0 +1,322 @@
+{
+ "version": 1,
+ "marginDefault": 0.15,
+ "updated": "2026-11-13",
+ "profiles": {
+  "chat_answer": {
+   "syntax.sent.len.mean": {
+    "min": 8,
+    "max": 22,
+    "source": "rule"
+   },
+   "syntax.sent.len.short.share": {
+    "min": 0.12,
+    "max": 0.6,
+    "source": "rule"
+   },
+   "syntax.sent.len.long.share": {
+    "min": 0,
+    "max": 0.2,
+    "source": "rule"
+   },
+   "syntax.sent.len.cv": {
+    "min": 0.3,
+    "max": 1.1,
+    "source": "rule"
+   },
+   "syntax.clause.per.sent": {
+    "min": 1,
+    "max": 2.5,
+    "source": "rule"
+   },
+   "para.len.mean": {
+    "min": 10,
+    "max": 80,
+    "source": "rule"
+   },
+   "para.one.sent.share": {
+    "min": 0,
+    "max": 0.6,
+    "source": "rule"
+   },
+   "discourse.connective.per1000": {
+    "min": 20,
+    "max": 140,
+    "source": "rule"
+   },
+   "style.cliche.per1000": {
+    "min": 0,
+    "max": 10,
+    "source": "rule"
+   },
+   "style.passive.share": {
+    "min": 0,
+    "max": 0.3,
+    "source": "rule"
+   },
+   "ai.marker.per1000": {
+    "min": 0,
+    "max": 10,
+    "source": "rule"
+   },
+   "ai.metatext.per1000": {
+    "min": 0,
+    "max": 3,
+    "source": "rule"
+   }
+  },
+  "technical_doc": {
+   "syntax.sent.len.mean": {
+    "min": 12,
+    "max": 32,
+    "source": "rule"
+   },
+   "syntax.sent.len.long.share": {
+    "min": 0.02,
+    "max": 0.45,
+    "source": "rule"
+   },
+   "syntax.clause.len.mean": {
+    "min": 4,
+    "max": 14,
+    "source": "rule"
+   },
+   "depth.dep.max.mean": {
+    "min": 3,
+    "max": 9,
+    "source": "rule"
+   },
+   "depth.sub.sent.share": {
+    "min": 0.15,
+    "max": 0.75,
+    "source": "rule"
+   },
+   "nominal.abstract.share": {
+    "min": 0.05,
+    "max": 0.3,
+    "source": "rule"
+   },
+   "nominal.noun.verb.ratio": {
+    "min": 1.5,
+    "max": 5,
+    "source": "rule"
+   },
+   "style.passive.share": {
+    "min": 0.02,
+    "max": 0.35,
+    "source": "rule"
+   },
+   "punct.comma.per1000": {
+    "min": 20,
+    "max": 100,
+    "source": "rule"
+   },
+   "para.len.mean": {
+    "min": 25,
+    "max": 120,
+    "source": "rule"
+   },
+   "discourse.connective.per1000": {
+    "min": 25,
+    "max": 150,
+    "source": "rule"
+   },
+   "ai.marker.per1000": {
+    "min": 0,
+    "max": 10,
+    "source": "rule"
+   }
+  },
+  "business_letter": {
+   "syntax.sent.len.mean": {
+    "min": 10,
+    "max": 24,
+    "source": "rule"
+   },
+   "syntax.sent.len.long.share": {
+    "min": 0,
+    "max": 0.25,
+    "source": "rule"
+   },
+   "syntax.clause.per.sent": {
+    "min": 1,
+    "max": 2.5,
+    "source": "rule"
+   },
+   "syntax.simple.share": {
+    "min": 0.4,
+    "max": 1,
+    "source": "rule"
+   },
+   "style.passive.share": {
+    "min": 0,
+    "max": 0.2,
+    "source": "rule"
+   },
+   "style.cliche.per1000": {
+    "min": 0,
+    "max": 15,
+    "source": "rule"
+   },
+   "style.modal.per1000": {
+    "min": 2,
+    "max": 25,
+    "source": "rule"
+   },
+   "style.pron.1st.per1000": {
+    "min": 0,
+    "max": 25,
+    "source": "rule"
+   },
+   "style.pron.2nd.per1000": {
+    "min": 2,
+    "max": 35,
+    "source": "rule"
+   },
+   "discourse.connective.per1000": {
+    "min": 15,
+    "max": 130,
+    "source": "rule"
+   },
+   "ai.marker.per1000": {
+    "min": 0,
+    "max": 10,
+    "source": "rule"
+   },
+   "ai.metatext.per1000": {
+    "min": 0,
+    "max": 3,
+    "source": "rule"
+   }
+  },
+  "prose_essay": {
+   "syntax.sent.len.mean": {
+    "min": 12,
+    "max": 30,
+    "source": "rule"
+   },
+   "syntax.sent.len.cv": {
+    "min": 0.25,
+    "max": 0.9,
+    "source": "rule"
+   },
+   "syntax.sent.len.short.share": {
+    "min": 0.02,
+    "max": 0.35,
+    "source": "rule"
+   },
+   "syntax.sent.len.p90": {
+    "min": 15,
+    "max": 45,
+    "source": "rule"
+   },
+   "syntax.sent.len.autocorr": {
+    "min": -0.5,
+    "max": 0.5,
+    "source": "rule"
+   },
+   "syntax.clause.per.sent": {
+    "min": 1.05,
+    "max": 2.2,
+    "source": "rule"
+   },
+   "discourse.connective.diversity": {
+    "min": 0.25,
+    "max": 1,
+    "source": "rule"
+   },
+   "discourse.cause.per1000": {
+    "min": 2,
+    "max": 30,
+    "source": "rule"
+   },
+   "para.len.mean": {
+    "min": 30,
+    "max": 120,
+    "source": "rule"
+   },
+   "para.one.sent.share": {
+    "min": 0,
+    "max": 0.35,
+    "source": "rule"
+   },
+   "ai.marker.per1000": {
+    "min": 0,
+    "max": 10,
+    "source": "rule"
+   },
+   "ai.metatext.per1000": {
+    "min": 0,
+    "max": 3,
+    "source": "rule"
+   },
+   "style.cliche.per1000": {
+    "min": 0,
+    "max": 10,
+    "source": "rule"
+   }
+  },
+  "math_paper": {
+   "syntax.sent.len.mean": {
+    "min": 14,
+    "max": 38,
+    "source": "rule"
+   },
+   "syntax.sent.len.p90": {
+    "min": 20,
+    "max": 70,
+    "source": "rule"
+   },
+   "syntax.clause.len.mean": {
+    "min": 5,
+    "max": 16,
+    "source": "rule"
+   },
+   "depth.dep.max.mean": {
+    "min": 4,
+    "max": 10,
+    "source": "rule"
+   },
+   "depth.sub.sent.share": {
+    "min": 0.2,
+    "max": 0.75,
+    "source": "rule"
+   },
+   "nominal.abstract.share": {
+    "min": 0.04,
+    "max": 0.28,
+    "source": "rule"
+   },
+   "style.hedge.per1000": {
+    "min": 0,
+    "max": 12,
+    "source": "rule"
+   },
+   "style.passive.share": {
+    "min": 0.02,
+    "max": 0.4,
+    "source": "rule"
+   },
+   "punct.comma.per1000": {
+    "min": 25,
+    "max": 110,
+    "source": "rule"
+   },
+   "discourse.connective.per1000": {
+    "min": 20,
+    "max": 140,
+    "source": "rule"
+   },
+   "ai.marker.per1000": {
+    "min": 0,
+    "max": 10,
+    "source": "rule"
+   },
+   "para.len.mean": {
+    "min": 25,
+    "max": 140,
+    "source": "rule"
+   }
+  }
+ }
+}
