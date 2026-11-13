@@ -1,0 +1,15 @@
+# Движок метрик (tools/analyze.py): морфология pymorphy3 и синтаксис natasha.
+# Ставится в .venv плагина, не в системный Python:
+#   python -m venv .venv
+#   .venv\Scripts\python.exe -m pip install -r requirements.txt
+# Версии — те, на которых посчитаны тесты и целевые интервалы (13.11.2026).
+
+pymorphy3==2.0.6
+pymorphy3-dicts-ru==2.4.417150.4580142
+natasha==1.6.0
+razdel==0.5.0
+slovnet==0.6.0
+torch==2.15.0
+
+# Тесты метрик: pytest tests/test_metrics.py
+pytest==9.2.0

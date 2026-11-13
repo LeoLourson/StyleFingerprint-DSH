@@ -2,7 +2,12 @@
   "name": "dsh-style-fingerprint",
   "version": "0.1.0",
   "private": true,
-  "description": "Стилевой отпечаток русского текста: закон и шаблоны перед документом, проверка готового текста с местами, сто метрик движком на Python, страница настроек в Settings → Plugins.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LeoLourson/StyleFingerprint-DSH.git"
+  },
+  "description": "Стилевой отпечаток русского текста: закон и шаблоны перед документом, проверка готового текста с местами, 120 метрик движком на Python, страница настроек в Settings → Plugins.",
   "type": "module",
   "main": "index.js",
   "exports": {

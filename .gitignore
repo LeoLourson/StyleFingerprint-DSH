@@ -1,5 +1,9 @@
-# Тексты корпуса не коммитятся: их собирает tools/fetch_corpus.py по manifest.json.
+# Тексты корпусов не коммитятся: их собирают tools/fetch_corpus.py по corpus/manifest.json
+# и tools/fetch_math_corpus.py по corpus/math/manifest.json. Статьи Шкаликова остаются под
+# авторским правом, тексты Викитеки идут под CC BY-SA, поэтому в репозитории лежат только
+# манифест и цитатный индекс.
 corpus/text/
+corpus/math/shkalikov/
 
 # Python
 .venv/
