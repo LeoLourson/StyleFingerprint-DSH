@@ -12,13 +12,20 @@ texts, downloads the Russian full-text PDF of every remaining paper into .tmp/pd
 heads and page numbers, glues hyphenated line breaks and restores paragraphs, then
 writes corpus/math/shkalikov/<mathnet>.txt and corpus/math/manifest.json.
 
-Repeated runs are byte-identical: the person page and the PDFs are cached under
-.tmp, and the manifest keeps the "built" stamp of the previous run whenever the
-computed content is unchanged.  Pass --refresh to refetch the page and the PDFs.
+Repeated runs are byte-identical: the person page is cached under .tmp and the
+manifest keeps the "built" stamp of the previous run whenever the computed content
+is unchanged.  A successful build deletes the downloaded PDFs, so .tmp keeps only
+the reports; the next run downloads them again and gets the same texts.
+
+Needs requests, beautifulsoup4, pypdf (fontTools, the pypdf extra for Type1
+fonts, improves the decoding of older PDFs) and pymorphy3 with its Russian
+dictionary, which glues the words a line break split.  No PDF is written outside
+.tmp.
 
 Options:
     --refresh         refetch the person page and every PDF
     --classify-only   parse and classify the bibliography, write .tmp/classify.txt
+    --validate        check the manifest against the text files and exit
     --limit N         process only N articles (development aid, not for the final run)
 """
 
@@ -41,6 +48,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 from pypdf import PdfReader
+import pymorphy3
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS_DIR = ROOT / "corpus" / "math"
@@ -52,6 +60,7 @@ PAGE_CACHE = TMP_DIR / "person.html"
 URL_CACHE = TMP_DIR / "math_urls.json"
 BUILD_REPORT = TMP_DIR / "build_report.txt"
 CLASSIFY_REPORT = TMP_DIR / "classify.txt"
+VALIDATION_REPORT = TMP_DIR / "validate.txt"
 
 PERSON_ID = 12042
 PERSON_URL = (
@@ -68,8 +77,11 @@ SHORT_WORK_WORDS = 1000
 MATHNET_RE = re.compile(r"mi\.mathnet\.ru/rus/([a-z]+)(\d+)")
 GETFT_RE = re.compile(r'href="([^"]*getFT[^"]*)"', re.IGNORECASE)
 QUOTE_RE = re.compile(r"[\u201c\u201e\"]([^\u201c\u201d\"]{3,400})[\u201d\"]")
-WORD_RE = re.compile(r"[^\W_]+(?:[-'\u2019][^\W_]+)*", re.UNICODE)
 CYRILLIC_RE = re.compile(r"[\u0410-\u044f\u0401\u0451]")
+TOKEN_RE = re.compile(r"[^\W_]+(?:[-'\u2019][^\W_]+)*", re.UNICODE)
+TOKEN_EDGE_RE = re.compile(r"[\u0410-\u044f\u0401\u0451-]+")
+MORPH: pymorphy3.MorphAnalyzer | None = None
+KNOWN_WORDS: dict[str, bool] = {}
 LATIN_RE = re.compile(r"[A-Za-z]")
 CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 
@@ -78,10 +90,17 @@ NOISE_LINE_RES = (
     re.compile(r"^[\s\dIVXLCivxlc.,;\-\u2013\u2014/()\[\]]+$"),
     re.compile(r"^/[A-Za-z]+\d*$"),
     re.compile(r"^\u00a9"),
-    re.compile(r"^[c\u0441]\s*[\u00a9\u25cb\u24b8]"),
+    re.compile(r"^[c\u0441]\s*[\u00a9\u25cb\u24b8\u20dd\u20de\u20e0]"),
     re.compile(r"^c\s+\d{4}\b"),
     re.compile(r"^(УДК|ББК|ISSN)\b"),
     re.compile(r"^DOI\s*:?\s*(https?://|10\.)"),
+    # A running head in capitals closed by the page number, glued to the text.
+    re.compile(r"^[А-ЯЁ][А-ЯЁ\s.,\-\u2013]{14,}\s+\d{1,3}$"),
+    # A journal footer inside the text block: "Матем. заметки, т. 30, No 3".
+    re.compile(
+        r"^\d*\s*(?:Матем\.\s*заметки|УМН|Функц\.\s*анализ|Матем\.\s*сб\."
+        r"|Сиб\.\s*матем\.|Вестн\.\s*Моск\.\s*ун-та)\b.*\bт\.\s*\d"
+    ),
 )
 ABBREVIATIONS = {
     "т", "е", "др", "пр", "см", "напр", "рис", "табл", "стр", "г", "гг", "в", "вв",
@@ -96,11 +115,15 @@ AUTHOR_LINE_RE = re.compile(
 # The address, e-mail and "received" blocks of a printed article are service text.
 SERVICE_PARAGRAPH_RE = re.compile(
     r"E-?mail\s*:|[\w.+-]+@[\w-]+\.[\w.]+"
-    r"|Поступил[ао]?\s+в\s+редакцию|Принято\s+к\s+публикации"
-    r"|Представлено\s+в\s+редакцию"
-    r"|^Московский государственный университет"
-    r"|^МГУ им\.|^Andrei Andreevich|^Андрей Андреевич Шкаликов"
+    r"|Поступил[ао]?\s+в\s+редакцию|поступила\s+в\s+редакцию"
+    r"|Принято\s+к\s+публикации|Представлено\s+в\s+редакцию"
+    r"|^Статья\s+поступила"
+    r"|^Московский\s+государственный|^МГУ им\."
+    r"|^Andrei Andreevich|^Андрей Андреевич Шкаликов"
 )
+# A text layer that draws every line twice: the same word follows itself.
+DOUBLE_WORD_RE = re.compile(r"([\w\u0410-\u044f\u0401\u0451]{4,})\1")
+DOUBLED_SHARE_MAX = 0.01
 SECTION_HEAD_RE = re.compile(
     r"^(?:\d+(?:\.\d+)*\.?\s+[А-ЯЁ]"
     r"|Литература\b|Список литературы\b|Введение\b|Заключение\b"
@@ -141,10 +164,14 @@ class Entry:
 
 
 def norm_space(value: str) -> str:
-    """Normalise one line: NFKC, no control characters, single spaces."""
+    """Normalise one line: NFKC, no control characters, single spaces.
+
+    A soft hyphen stays: at the end of a line it is the only mark of a word split
+    by the typesetter, and dropping it here would leave the two halves apart.
+    """
     value = unicodedata.normalize("NFKC", value)
     value = CONTROL_RE.sub("", value)
-    value = value.replace("\u00a0", " ").replace("\u00ad", "").replace("\u200b", "")
+    value = value.replace("\u00a0", " ").replace("\u200b", "")
     return re.sub(r"[ \t]+", " ", value).strip()
 
 
@@ -154,8 +181,21 @@ def normal_key(value: str) -> str:
 
 
 def count_words(text: str) -> int:
-    """Words of a text: letter/digit runs, hyphens and apostrophes kept inside."""
-    return len(WORD_RE.findall(text))
+    """Words of the corpus text: whitespace-separated tokens, len(text.split()).
+
+    The literary corpus counts the same way, so the numbers of both corpora compare
+    and the manifest reports what a reader of the file sees.
+    """
+    return len(text.split())
+
+
+def paragraph_is_text(paragraph: str) -> bool:
+    """Whether a restored paragraph carries at least two tokens of letters.
+
+    The filter keeps the paragraph set the corpus was reviewed with, so a change of
+    the word counter cannot move text between runs.
+    """
+    return len(TOKEN_RE.findall(paragraph)) >= 2
 
 
 def cyrillic_share(text: str) -> float:
@@ -204,16 +244,18 @@ class Fetcher:
             except requests.RequestException:
                 if attempt == attempts:
                     return None
-                time.sleep(2 * attempt)
+                time.sleep(3 * attempt)
                 continue
             self.requests_made += 1
             if response.status_code == 200:
                 return response
-            if response.status_code in (403, 404, 410):
+            if response.status_code in (404, 410):
                 return response
             if attempt == attempts:
                 return response
-            time.sleep(2 * attempt)
+            # 403 and 429 come back when the site throttles a burst of downloads;
+            # a pause of tens of seconds brings the next attempt through.
+            time.sleep(20 * attempt)
         return None
 
 
@@ -403,6 +445,16 @@ def download_pdf(fetcher: Fetcher, entry: Entry, refresh: bool) -> tuple[bytes |
         if blob[:5] == b"%PDF-":
             return blob, fetcher.urls.get(entry.mathnet, "")
 
+    # A known full-text address saves the landing page and one request: the site
+    # throttles a burst, so every request that can be skipped counts.
+    known = fetcher.urls.get(entry.mathnet, "")
+    if known and not refresh:
+        response = fetcher.get(known, timeout=180)
+        blob = response.content if response is not None and response.status_code == 200 else b""
+        if blob[:5] == b"%PDF-" and len(blob) >= 10000:
+            cached.write_bytes(blob)
+            return blob, known
+
     url = landing_pdf_url(fetcher, entry)
     if not url:
         return None, ""
@@ -446,12 +498,32 @@ def title_prefix_matches(line: str, title_key: str) -> bool:
     return key.startswith(title_key[:12]) or title_key.startswith(key)
 
 
+def title_word_hits(line_key: str, title_words: list[str]) -> int:
+    """How many long words of the title appear in the line, in order."""
+    hits = 0
+    position = 0
+    for word in title_words:
+        found = line_key.find(word, position)
+        if found < 0:
+            continue
+        hits += 1
+        position = found + len(word)
+    return hits
+
+
 def cut_masthead(page: list[str], title: str, running: set[str]) -> list[str]:
     """Drop the journal masthead above the article title on the first page."""
     title_key = normal_key(title)
     if title_key:
         for index, line in enumerate(page):
             if line and title_prefix_matches(line, title_key):
+                return page[index:]
+        # A scanned page may garble the title ("О БАЗЖСНОСТИ ...") while most of
+        # its long words stay readable: three of them in one line mark the title.
+        title_words = [normal_key(word) for word in title.split()]
+        title_words = [word for word in title_words if len(word) >= 5]
+        for index, line in enumerate(page[:12]):
+            if line and title_word_hits(normal_key(line), title_words) >= 3:
                 return page[index:]
         # The printed title may differ from the citation: it can be shorter
         # ("Инвариантные подпространства..." for a paper with a longer name
@@ -516,7 +588,13 @@ def should_break(previous: str, current: str) -> bool:
 
 
 def glue(previous: str, current: str) -> str:
-    """Join a line break inside a hyphenated word or a compound name."""
+    """Join a line break inside a hyphenated word or a compound name.
+
+    A soft hyphen is the break marker of a word split by the typesetter: the word
+    goes on without the hyphen, so the marker itself is dropped.
+    """
+    if previous.endswith("\u00ad"):
+        return previous[:-1] + current
     if previous.endswith("\u2013") or previous.endswith("\u2014"):
         return previous + current
     if previous.endswith("-"):
@@ -534,17 +612,94 @@ def tidy_paragraph(text: str) -> str:
     return text.strip()
 
 
-def build_paragraphs(pages: list[list[str]], title: str, running: set[str]) -> list[str]:
-    """Restore paragraphs from the lines of every page."""
+def clean_soft_hyphens(line: str) -> str:
+    """Keep a soft hyphen only at the end, where it marks a word break."""
+    if line.endswith("\u00ad"):
+        return line[:-1].rstrip() + "\u00ad"
+    return line.replace("\u00ad", "")
+
+
+def morph_analyzer() -> pymorphy3.MorphAnalyzer:
+    """The Russian dictionary, built once for the whole build."""
+    global MORPH
+    if MORPH is None:
+        MORPH = pymorphy3.MorphAnalyzer()
+    return MORPH
+
+
+def is_known_word(word: str) -> bool:
+    """Whether the dictionary knows the word in at least one reading."""
+    key = word.lower()
+    if key not in KNOWN_WORDS:
+        KNOWN_WORDS[key] = any(parse.is_known for parse in morph_analyzer().parse(key))
+    return KNOWN_WORDS[key]
+
+
+def glue_split_words(lines: list[str]) -> tuple[list[str], int]:
+    """Glue a word that a line break split without leaving a hyphen.
+
+    The tail of one line and the head of the next are a broken word when the head
+    is not a word by itself while the whole is one.
+    """
+    result = list(lines)
+    glued = 0
+    for index in range(len(result) - 1):
+        left, right = result[index], result[index + 1]
+        if not left or not right:
+            continue
+        tails = TOKEN_EDGE_RE.findall(left)
+        head = TOKEN_EDGE_RE.search(right)
+        if not tails or not head:
+            continue
+        tail, head_text = tails[-1], head.group(0)
+        if len(head_text) < 2 or is_known_word(head_text) or not is_known_word(tail + head_text):
+            continue
+        result[index] = left[: left.rfind(tail)].rstrip()
+        result[index + 1] = right[: head.start()] + tail + head_text + right[head.end():]
+        glued += 1
+    return result, glued
+
+
+def prepare_lines(
+    page: list[str], title: str, running: set[str], first_page: bool
+) -> tuple[list[str], int]:
+    """Cut the masthead and the running lines, then glue broken words."""
+    lines = cut_masthead(page, title, running) if first_page else page
+    # The first page with text carries the real title and the author line, and
+    # they look exactly like the running head of the other pages; only its footer
+    # is cut.
+    footer = set()
+    if first_page:
+        filled = [index for index, line in enumerate(lines) if line]
+        footer = set(filled[-2:])
+    prepared: list[str] = []
+    for index, line in enumerate(lines):
+        if is_noise_line(line):
+            continue
+        if normal_key(line) in running and (not first_page or index in footer):
+            continue
+        prepared.append(clean_soft_hyphens(line))
+    return glue_split_words(prepared)
+
+
+def build_paragraphs(
+    pages: list[list[str]], title: str, running: set[str]
+) -> tuple[list[str], int, int]:
+    """Restore paragraphs from the lines of every page.
+
+    Returns the paragraphs and two counts: breaks joined by a soft hyphen and
+    breaks joined by the dictionary.
+    """
     paragraphs: list[str] = []
     buffer: list[str] = []
     previous = ""
+    soft_joined = 0
 
     def flush() -> None:
         nonlocal buffer, previous
         if buffer:
             paragraph = tidy_paragraph(" ".join(buffer))
-            if paragraph and CYRILLIC_RE.search(paragraph) and count_words(paragraph) >= 2:
+            if paragraph and CYRILLIC_RE.search(paragraph) and paragraph_is_text(paragraph):
                 paragraphs.append(paragraph)
         buffer = []
         previous = ""
@@ -553,24 +708,17 @@ def build_paragraphs(pages: list[list[str]], title: str, running: set[str]) -> l
         (index for index, page in enumerate(pages) if any(page)),
         0,
     )
+    dict_joined = 0
     for page_index, page in enumerate(pages):
-        lines = cut_masthead(page, title, running) if page_index == first_page else page
-        # The first page with text carries the real title and the author line, and
-        # they look exactly like the running head of the other pages; only its
-        # footer is cut.
-        footer = set()
-        if page_index == first_page:
-            filled = [index for index, line in enumerate(lines) if line]
-            footer = set(filled[-2:])
-        for index, line in enumerate(lines):
+        lines, glued = prepare_lines(page, title, running, page_index == first_page)
+        dict_joined += glued
+        for line in lines:
             if not line:
                 flush()
                 continue
-            if is_noise_line(line):
-                continue
-            if normal_key(line) in running and (page_index != first_page or index in footer):
-                continue
-            if buffer and previous and previous.endswith(("-", "\u2013", "\u2014")):
+            if buffer and previous and previous.endswith(("\u00ad", "-", "\u2013", "\u2014")):
+                if previous.endswith("\u00ad"):
+                    soft_joined += 1
                 buffer[-1] = glue(previous, line)
                 previous = buffer[-1]
                 continue
@@ -581,29 +729,55 @@ def build_paragraphs(pages: list[list[str]], title: str, running: set[str]) -> l
             if AUTHOR_LINE_RE.fullmatch(line):
                 flush()
     flush()
-    return paragraphs
+    return paragraphs, soft_joined, dict_joined
 
 
-def pdf_to_text(blob: bytes, title: str, scratch: Path) -> tuple[str, int, int]:
-    """Corpus text of one PDF plus the page count and the running lines dropped."""
+def pdf_to_text(
+    blob: bytes, title: str, scratch: Path
+) -> tuple[str, int, int, int, int, int]:
+    """Corpus text of one PDF plus its build numbers.
+
+    Page count, running lines dropped, raw characters (a scan has no text layer, a
+    text layer in a custom font encoding has raw characters but no readable text),
+    breaks joined by a soft hyphen and breaks joined by the dictionary.
+    """
     pages, page_count = read_pdf_pages(blob, scratch)
+    raw_chars = sum(len(line) for page in pages for line in page)
     running = running_line_keys(pages)
     dropped = sum(1 for page in pages for line in page if normal_key(line) in running)
+    built, soft_joined, dict_joined = build_paragraphs(pages, title, running)
     paragraphs = [
         paragraph
-        for paragraph in build_paragraphs(pages, title, running)
+        for paragraph in built
         if not SERVICE_PARAGRAPH_RE.search(paragraph)
         and not AUTHOR_LINE_RE.fullmatch(paragraph)
     ]
     text = "\n\n".join(paragraphs)
     if text:
         text += "\n"
-    return text, page_count, dropped
+    return text, page_count, dropped, raw_chars, soft_joined, dict_joined
 
 
 def language_ok(text: str) -> bool:
     """A Russian paper: Cyrillic letters dominate the extracted text."""
     return cyrillic_share(text) >= 0.3
+
+
+def is_doubled_text(text: str) -> bool:
+    """A PDF whose text layer draws every line twice, word over the same word."""
+    words = re.findall(r"[^\W_]+", text)
+    if len(words) < 200:
+        return False
+    doubled = sum(1 for word in words if DOUBLE_WORD_RE.search(word))
+    return doubled / len(words) > DOUBLED_SHARE_MAX
+
+
+def cited_pages(pages: str) -> int:
+    """How many printed pages the bibliography gives the paper."""
+    match = re.match(r"(\d+)\s*[\u2013\u2014-]\s*(\d+)", pages or "")
+    if not match:
+        return 0
+    return int(match.group(2)) - int(match.group(1)) + 1
 
 
 # ---------------------------------------------------------------------- writing
@@ -635,6 +809,13 @@ def write_manifest(works: list[dict], excluded: list[dict], words: int) -> dict:
         "built": "",
         "author": "shkalikov",
         "use": "exemplar",
+        "notes": (
+            "words — число разделённых пробелами отрезков текста (len(text.split())), "
+            "как в литературном корпусе; chars — длина файла в знаках; считаются по "
+            "файлу corpus/math/shkalikov/<mathnet>.txt, который лежит в дереве. "
+            "Разрывы слов склеены: концевой мягкий перенос и словарная проверка "
+            "pymorphy3 (голова разрыва не слово, а склейка — слово)."
+        ),
         "coverage": {"shkalikov": {"words": words, "works": len(works), "target": TARGET_WORDS}},
         "source": {
             "site": "mathnet",
@@ -656,6 +837,98 @@ def write_manifest(works: list[dict], excluded: list[dict], words: int) -> dict:
         document["built"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     dump_json(MANIFEST, document)
     return document
+
+
+# ------------------------------------------------------------------------ checks
+
+
+WORK_FIELDS = (
+    "id", "mathnet", "title", "journal", "year", "pages", "url", "file",
+    "chars", "words", "sha256", "notes",
+)
+
+
+def validate_manifest() -> list[str]:
+    """Check the manifest against the files it describes; no problems means good.
+
+    The words and chars of a work are recomputed from its text file, so a number
+    that came from another text cannot pass: this is the check that matters for
+    the numbers the plugin shows a reader.
+    """
+    problems: list[str] = []
+    if not MANIFEST.exists():
+        return ["manifest is missing"]
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    for key in ("version", "built", "author", "use", "coverage", "source", "works", "excluded"):
+        if key not in manifest:
+            problems.append(f"manifest misses {key}")
+    seen: set[str] = set()
+    total_words = 0
+    total_chars = 0
+    for work in manifest.get("works", []):
+        ident = work.get("mathnet", "?")
+        empty = [field for field in WORK_FIELDS if not work.get(field)]
+        if empty:
+            problems.append(f"{ident}: empty or missing {empty}")
+            continue
+        if ident in seen:
+            problems.append(f"{ident}: duplicate work")
+        seen.add(ident)
+        path = ROOT / work["file"]
+        if not path.exists():
+            problems.append(f"{ident}: file is missing")
+            continue
+        text = path.read_text(encoding="utf-8")
+        if hashlib.sha256(text.encode("utf-8")).hexdigest() != work["sha256"]:
+            problems.append(f"{ident}: sha256 differs from the file")
+        if len(text) != work["chars"]:
+            problems.append(f"{ident}: chars {work['chars']} differs from {len(text)}")
+        if count_words(text) != work["words"]:
+            problems.append(f"{ident}: words {work['words']} differs from {count_words(text)}")
+        total_words += work["words"]
+        total_chars += work["chars"]
+    coverage = manifest.get("coverage", {}).get("shkalikov", {})
+    if coverage.get("words") != total_words:
+        problems.append(f"coverage words {coverage.get('words')} differs from {total_words}")
+    if coverage.get("works") != len(seen):
+        problems.append(f"coverage works {coverage.get('works')} differs from {len(seen)}")
+    excluded_ids = {item.get("mathnet") for item in manifest.get("excluded", [])}
+    if excluded_ids & seen:
+        problems.append(f"works and excluded share {sorted(excluded_ids & seen)}")
+    for item in manifest.get("excluded", []):
+        if set(item) != {"mathnet", "title", "reason"}:
+            problems.append(f"{item.get('mathnet', '?')}: excluded fields {sorted(item)}")
+        elif not item["reason"] or not item["title"]:
+            problems.append(f"{item['mathnet']}: excluded without title or reason")
+    pdfs = [
+        str(path.relative_to(ROOT))
+        for path in ROOT.rglob("*.pdf")
+        if ".tmp" not in path.parts and ".venv" not in path.parts
+    ]
+    if pdfs:
+        problems.append(f"pdf inside the repository: {pdfs[:5]}")
+    return problems
+
+
+def write_validation(problems: list[str]) -> None:
+    report = [
+        "manifest validation: " + ("ok" if not problems else f"{len(problems)} problems"),
+        "",
+    ]
+    report += problems
+    VALIDATION_REPORT.write_text("\n".join(report) + "\n", encoding="utf-8", newline="\n")
+
+
+def cleanup_pdf_cache() -> None:
+    """Remove the downloaded PDFs: only the build report stays in .tmp."""
+    if PDF_DIR.exists():
+        for path in PDF_DIR.glob("*.pdf"):
+            path.unlink()
+        if not any(PDF_DIR.iterdir()):
+            PDF_DIR.rmdir()
+    scratch = TMP_DIR / "current.pdf"
+    if scratch.exists():
+        scratch.unlink()
 
 
 # ------------------------------------------------------------------------ main
@@ -684,6 +957,14 @@ def main(argv: list[str]) -> int:
     classify_only = "--classify-only" in argv
     limit = int(argv[argv.index("--limit") + 1]) if "--limit" in argv else 0
 
+    if "--validate" in argv:
+        problems = validate_manifest()
+        write_validation(problems)
+        print(f"manifest_problems={len(problems)} report={VALIDATION_REPORT}")
+        for problem in problems[:20]:
+            print(f"  {problem}")
+        return 1 if problems else 0
+
     started = time.time()
     TMP_DIR.mkdir(parents=True, exist_ok=True)
     fetcher = Fetcher()
@@ -697,12 +978,18 @@ def main(argv: list[str]) -> int:
         return 0
 
     works: list[dict] = []
+    texts: dict[str, str] = {}
     excluded: list[dict] = []
     short_works: list[str] = []
     english_after_pdf: list[str] = []
-    no_text_layer: list[str] = []
+    blank_pdf: list[str] = []
+    unreadable: list[str] = []
+    odd_pages: list[str] = []
+    doubled: list[str] = []
     download_failures = 0
     download_seconds = 0.0
+    soft_breaks = 0
+    dict_breaks = 0
     scratch = TMP_DIR / "current.pdf"
 
     for entry in entries:
@@ -727,13 +1014,31 @@ def main(argv: list[str]) -> int:
             })
             continue
 
-        text, page_count, dropped = pdf_to_text(blob, entry.title, scratch)
-        if not text or count_words(text) < 50:
-            no_text_layer.append(entry.mathnet)
+        text, page_count, dropped, raw_chars, soft_joined, dict_joined = pdf_to_text(
+            blob, entry.title, scratch
+        )
+        soft_breaks += soft_joined
+        dict_breaks += dict_joined
+        printed = cited_pages(entry.pages)
+        if printed and page_count > max(3 * printed, printed + 8):
+            odd_pages.append(entry.mathnet)
             excluded.append({
                 "mathnet": entry.mathnet,
                 "title": entry.title or entry.raw[:200],
-                "reason": "нет текстового слоя в PDF",
+                "reason": "PDF содержит выпуск журнала, а не статью",
+            })
+            continue
+        if not text or count_words(text) < 50:
+            if raw_chars < 200:
+                blank_pdf.append(entry.mathnet)
+                reason = "PDF без текстового слоя (скан)"
+            else:
+                unreadable.append(entry.mathnet)
+                reason = "текстовый слой PDF не декодируется"
+            excluded.append({
+                "mathnet": entry.mathnet,
+                "title": entry.title or entry.raw[:200],
+                "reason": reason,
             })
             continue
         if not language_ok(text):
@@ -744,12 +1049,21 @@ def main(argv: list[str]) -> int:
                 "reason": "английский текст без русского оригинала",
             })
             continue
+        if is_doubled_text(text):
+            doubled.append(entry.mathnet)
+            excluded.append({
+                "mathnet": entry.mathnet,
+                "title": entry.title or entry.raw[:200],
+                "reason": "текстовый слой PDF дублируется",
+            })
+            continue
 
         words = count_words(text)
         if words < SHORT_WORK_WORDS:
             short_works.append(entry.mathnet)
-        TEXT_DIR.mkdir(parents=True, exist_ok=True)
-        (TEXT_DIR / f"{entry.mathnet}.txt").write_text(text, encoding="utf-8", newline="\n")
+        # Written only after the stop conditions below: a build that loses most
+        # downloads must leave the corpus that is already on disk untouched.
+        texts[entry.mathnet] = text
         works.append({
             "id": f"shkalikov/{entry.mathnet}",
             "mathnet": entry.mathnet,
@@ -772,18 +1086,27 @@ def main(argv: list[str]) -> int:
     total_words = sum(item["words"] for item in works)
     total_chars = sum(item["chars"] for item in works)
 
-    keep = {f"{item['mathnet']}.txt" for item in works}
-    if TEXT_DIR.exists():
+    reasons = Counter(item["reason"] for item in excluded)
+    downloaded = len(works) + len(blank_pdf) + len(unreadable) + len(odd_pages) + len(doubled)
+    attempts = downloaded + download_failures
+    failure_share = download_failures / attempts if attempts else 0.0
+    thin = len(short_works) + len(blank_pdf) + len(unreadable) + len(doubled)
+    thin_share = thin / downloaded if downloaded else 0.0
+    stopped = limit == 0 and (failure_share > 0.2 or thin_share > 0.2)
+
+    # The tree is replaced only by a build that passed the stop conditions, so a
+    # run that loses most downloads leaves the corpus it found on disk.
+    if stopped:
+        document = {"built": "not written: the build stopped before writing"}
+    else:
+        keep = {f"{item['mathnet']}.txt" for item in works}
+        TEXT_DIR.mkdir(parents=True, exist_ok=True)
+        for mathnet, text in texts.items():
+            (TEXT_DIR / f"{mathnet}.txt").write_text(text, encoding="utf-8", newline="\n")
         for stale in TEXT_DIR.glob("*.txt"):
             if stale.name not in keep:
                 stale.unlink()
-
-    document = write_manifest(works, excluded, total_words)
-
-    reasons = Counter(item["reason"] for item in excluded)
-    attempts = len(works) + download_failures
-    failure_share = download_failures / attempts if attempts else 0.0
-    short_share = len(short_works) / len(works) if works else 0.0
+        document = write_manifest(works, excluded, total_words)
 
     report = [
         f"built: {document['built']}",
@@ -800,18 +1123,28 @@ def main(argv: list[str]) -> int:
         f"total chars: {total_chars}",
         f"works below {SHORT_WORK_WORDS} words: {len(short_works)}"
         + (" (" + ", ".join(short_works) + ")" if short_works else ""),
+        f"word breaks glued: {soft_breaks + dict_breaks} "
+        f"(soft hyphen {soft_breaks}, dictionary {dict_breaks})",
+        f"pdf with fewer than {SHORT_WORK_WORDS} words: {thin} of {downloaded} "
+        f"({thin_share:.1%})",
         f"download attempts: {attempts}, failures: {download_failures} ({failure_share:.1%})",
         f"download seconds: {download_seconds:.1f}",
         f"total seconds: {time.time() - started:.1f}",
         f"english texts found after extraction: {len(english_after_pdf)}"
         + (" (" + ", ".join(english_after_pdf) + ")" if english_after_pdf else ""),
-        f"pdf without a text layer: {len(no_text_layer)}"
-        + (" (" + ", ".join(no_text_layer) + ")" if no_text_layer else ""),
+        f"pdf that is a scan: {len(blank_pdf)}"
+        + (" (" + ", ".join(blank_pdf) + ")" if blank_pdf else ""),
+        f"pdf with an undecodable text layer: {len(unreadable)}"
+        + (" (" + ", ".join(unreadable) + ")" if unreadable else ""),
+        f"pdf of a whole issue instead of the paper: {len(odd_pages)}"
+        + (" (" + ", ".join(odd_pages) + ")" if odd_pages else ""),
+        f"pdf with a doubled text layer: {len(doubled)}"
+        + (" (" + ", ".join(doubled) + ")" if doubled else ""),
         "",
         "stop conditions:",
         f"  download failures above 20%: {'YES' if failure_share > 0.2 else 'no'}",
-        f"  texts below {SHORT_WORK_WORDS} words above 20%: "
-        f"{'YES' if short_share > 0.2 else 'no'}",
+        f"  pdf with fewer than {SHORT_WORK_WORDS} words above 20%: "
+        f"{'YES' if thin_share > 0.2 else 'no'}",
         "",
         "works:",
     ]
@@ -828,12 +1161,14 @@ def main(argv: list[str]) -> int:
         report.append(f"DEVELOPMENT RUN: only {limit} articles processed")
     BUILD_REPORT.write_text("\n".join(report) + "\n", encoding="utf-8", newline="\n")
 
+    if not stopped:
+        cleanup_pdf_cache()
     print(f"entries={len(entries)} works={len(works)} excluded={len(excluded)}")
     print(f"words={total_words} chars={total_chars} short_works={len(short_works)}")
     print(f"download_failures={download_failures}/{attempts} seconds={download_seconds:.1f}")
     print(f"report={BUILD_REPORT}")
-    if limit == 0 and (failure_share > 0.2 or short_share > 0.2):
-        print("STOP CONDITION TRIGGERED")
+    if stopped:
+        print("STOP CONDITION TRIGGERED: the corpus on disk is unchanged")
         return 2
     return 0
 

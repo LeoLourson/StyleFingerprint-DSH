@@ -68,8 +68,11 @@ law/        закон (00) и слои 10-50 в едином формате: п
 reference/  справочники: паттерны, связки, наблюдения, спецификация метрик
 templates/  семь шаблонов: ответ, отчёт, README, план, статья, письмо, статья-математика
 data/       rules.json, metrics.json, targets.json, profiles.json, settings.json
-corpus/     manifest.json, text/<author>/<work>.txt, index.json (цитаты)
-tools/      fetch_corpus.py, build_index.py, analyze.py (движок метрик), metrics_spec.py
+corpus/     литература: manifest.json, text/<author>/<work>.txt, index.json (цитаты);
+            математика: corpus/math/manifest.json, corpus/math/shkalikov/<mathnet>.txt,
+            corpus/math/index.json
+tools/      fetch_corpus.py, build_index.py, fetch_math_corpus.py,
+            build_math_index.py, analyze.py (движок метрик), metrics_spec.py
 index.js    хост: инструмент `style`, раздел промпта, входной скилл, мост к Python
 client.js   клиент: страница settings.plugins.tab
 tests/      node: инструмент, раскладка, паритет; pytest: метрики
@@ -109,12 +112,12 @@ rules: [R-LANG-01, ...]
 Строим: пять профилей (`chat_answer`, `technical_doc`, `business_letter`,
 `prose_essay`, `math_paper`); семь шаблонов; шесть слоёв (`central`, `language`,
 `composition`, `author`, `classification`, `corpus`); корпус-образцы; движок метрик;
-инструмент; страницу настроек; входной скилл.
+инструмент; страницу настроек; входной скилл; математический корпус статей
+Шкаликова отдельным каталогом `corpus/math`.
 
 Не строим и записываем в `DEFERRED.md`: пьесы, публицистика, письма и дневники в
 корпусе; шаблоны коммита и сцены; автоматическую перепроверку ответа плагином;
-жёсткую блокировку отправки; переключатель разборщика; парсер в настройках; сборку
-корпуса Шкаликова сейчас.
+жёсткую блокировку отправки; переключатель разборщика; парсер в настройках.
 
 ## 5. Работы и приёмка
 
@@ -153,8 +156,18 @@ rules: [R-LANG-01, ...]
 `pass`; мост к Python работает и переживает падение движка; страница настроек
 соответствует правилам DSH UI и меняет поведение без перезапуска.
 
-**Р7. Сборка и установка (Lead).** Junction в `~/.dsh/plugins`, запись в профиле
-`desktop`, перезапуск, `dump-config`, демонстрация до/после, запись в память проекта.
+**Р7. Сборка и установка (Lead).** Junction в `node_modules` профиля `desktop`, запись
+в `package.json` профиля (зависимость и список бандлов), пробный запуск профиля на
+временном доме, перезапуск приложения, `dump-config`, демонстрация до/после, запись
+в память проекта. Приёмка: плагин активируется без ошибки, инструмент виден, раздел
+промпта на месте, карточка в Settings → Plugins открывается, маршрут страницы
+отвечает.
+
+**Р8. Математический корпус (Lead).** `tools/fetch_math_corpus.py`,
+`tools/build_math_index.py`, `corpus/math/manifest.json`, `corpus/math/index.json`.
+Приёмка: у каждого произведения заголовок, журнал, год, страницы, ссылка, sha256;
+`words` и `chars` манифеста совпадают с файлом; каждое исключение названо причиной;
+в репозитории нет PDF; индекс цитат не содержит формульных знаков.
 
 ## 6. Стоп-условия
 
