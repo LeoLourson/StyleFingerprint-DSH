@@ -798,8 +798,9 @@ window.__ModuleLoader__.load({
       // override layer never introduces a literal colour and stays legible
       // when the user switches the scheme.
       ctx.effect(() => {
-        if (!ctx.theme || typeof ctx.theme.overrideTokens !== 'function') return () => {};
-        return ctx.theme.overrideTokens('dsh-style-fingerprint', {
+        const theme = ctx.get('theme');
+        if (!theme || typeof theme.overrideTokens !== 'function') return () => {};
+        return theme.overrideTokens('dsh-style-fingerprint', {
           '--dsw-style-fp-pass': {
             light: 'var(--dsw-alias-state-success-primary)',
             dark: 'var(--dsw-alias-state-success-primary)',
@@ -836,8 +837,10 @@ window.__ModuleLoader__.load({
     }
 
     return {
-      // `theme` is read through `ctx.theme` behind a guard: a profile without
-      // the theme service keeps the page, only the override layer is skipped.
+      // `theme` is read through `ctx.get` behind a guard: the service stays
+      // optional, so a profile without it keeps the page and skips only the
+      // override layer. A property read (`ctx.theme`) would throw here, since
+      // the name is not declared in `inject`.
       inject: ['slots', 'locale'],
       apply,
     };

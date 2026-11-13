@@ -553,6 +553,9 @@ test('клиентская половина регистрирует стран�
 
   const clientCtx = {
     effect: (fn) => { const dispose = fn(); return typeof dispose === 'function' ? dispose : () => {}; },
+    // The real client context offers `get` for optional services; the half reads
+    // `theme` through it, so the fake must answer it too.
+    get: (name) => clientCtx[name],
     slots: {
       inject: (key, callback) => { injected.push(key); return callback(); },
       register: (options, component) => { registered.push({ options, component }); return () => {}; },
