@@ -72,7 +72,7 @@
     "source": "rule"
    },
    "syntax.sent.len.long.share": {
-    "min": 0.02,
+    "min": 0,
     "max": 0.45,
     "source": "rule"
    },
@@ -263,7 +263,7 @@
     "source": "rule"
    },
    "syntax.sent.len.p90": {
-    "min": 20,
+    "min": 15,
     "max": 70,
     "source": "rule"
    },
