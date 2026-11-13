@@ -682,7 +682,8 @@ export async function closeEngine() {
   await current.close();
 }
 
-async function measureWithEngine(text) {
+async function measureWithEngine(rawText) {
+  const text = proseForMetrics(rawText);
   const settings = loadSettings().value;
   const python = resolvePython(settings);
   let bridge;
@@ -753,6 +754,30 @@ export function maskForRules(text) {
     masked = masked.replace(pattern, (chunk) => '\u00a0'.repeat(chunk.length));
   }
   return masked;
+}
+
+/**
+ * What the metrics measure: the author's prose. Code, formulas, quotations and
+ * table rows are not prose, so they are dropped instead of masked: a block of
+ * shell commands would otherwise count as one long Russian sentence and skew
+ * sentence length, clause depth and the noun-to-verb ratio. Headings stay,
+ * because `ai.heading` counts them.
+ */
+const NON_PROSE = [
+  /```[\s\S]*?```/gu,
+  /`[^`\n]*`/gu,
+  /\$\$[\s\S]*?\$\$/gu,
+  /\$[^$\n]*\$/gu,
+  /\\\[[\s\S]*?\\\]/gu,
+  /\\\([\s\S]*?\\\)/gu,
+  /^>[^\n]*$/gmu,
+  /^\s*\|.*\|\s*$/gmu,
+];
+
+export function proseForMetrics(text) {
+  let prose = String(text ?? '');
+  for (const pattern of NON_PROSE) prose = prose.replace(pattern, ' ');
+  return prose;
 }
 
 /**
@@ -1061,6 +1086,40 @@ function samplesOf(settings, profile, count = 3) {
   return { samples: picked, corpus: kind, note: null };
 }
 
+/**
+ * Genre word → template file name. `brief` is called with the genre of the document, and
+ * the genre decides the skeleton; the profile only says which templates it allows.
+ * Genre words that name several documents (doc, spec) point at the report, because the
+ * report is the general technical document.
+ */
+const TEMPLATE_BY_GENRE = {
+  answer: 'answer', reply: 'answer',
+  report: 'report', doc: 'report', spec: 'report',
+  readme: 'readme', plan: 'plan',
+  letter: 'letter', email: 'letter', message: 'letter',
+  essay: 'essay', article: 'essay', explanation: 'essay',
+  math: 'math-article', paper: 'math-article', 'math-article': 'math-article',
+};
+
+/** The template of the named genre, else the first template the profile allows. */
+function chooseTemplate(paths, genre) {
+  const wanted = TEMPLATE_BY_GENRE[String(genre ?? '').trim().toLowerCase()];
+  if (wanted) {
+    const hit = paths.find((path) => basename(path) === `${wanted}.md`);
+    if (hit) {
+      const candidate = templateDoc(hit);
+      if (!candidate.missing) return candidate;
+    }
+  }
+  let template = { id: '', title: '', body: '', slots: [], path: '', missing: true, error: 'в профиле нет шаблона' };
+  for (const path of paths) {
+    const candidate = templateDoc(path);
+    if (!candidate.missing) return candidate;
+    template = candidate;
+  }
+  return template;
+}
+
 async function runBrief(args) {
   const settingsRead = loadSettings();
   const settings = settingsRead.value;
@@ -1086,12 +1145,7 @@ async function runBrief(args) {
   if (!law.some((doc) => doc.layer === 'central')) law.unshift(...layerDocs('central', settings));
 
   const templatePaths = Array.isArray(profile.templates) ? profile.templates : [];
-  let template = { id: '', title: '', body: '', slots: [], path: '', missing: true, error: 'в профиле нет шаблона' };
-  for (const path of templatePaths) {
-    const candidate = templateDoc(path);
-    if (!candidate.missing) { template = candidate; break; }
-    template = candidate;
-  }
+  const template = chooseTemplate(templatePaths, genre);
 
   const targetsDoc = loadTargets();
   const targets = targetsFor(profileId, settings, targetsDoc);

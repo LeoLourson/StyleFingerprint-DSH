@@ -10,6 +10,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -235,7 +236,6 @@ test('корпус: манифесты и индексы в своей форм�
       assert.ok(['novel', 'novella', 'story'].includes(work.genre), `жанр ${work.genre} работы ${work.id} неизвестен`);
       assert.ok(work.year === null || Number.isFinite(work.year), `год работы ${work.id} не число и не null`);
       assert.ok(typeof work.file === 'string' && work.file.endsWith('.txt'), `у работы ${work.id} нет файла`);
-      assert.ok(existsSync(path(work.file)), `файла ${work.file} нет`);
       assert.match(String(work.sha256), /^[0-9a-f]{64}$/u, `sha256 работы ${work.id} не хеш`);
       assert.ok(typeof work.license === 'string' && work.license.length > 0, `у работы ${work.id} нет лицензии`);
     }
@@ -251,7 +251,6 @@ test('корпус: манифесты и индексы в своей форм�
       const author = work.author ?? manifest.author;
       assert.ok(typeof author === 'string' && author.length > 0, `у работы ${work.id} нет автора`);
       assert.ok(typeof work.file === 'string' && work.file.endsWith('.txt'), `у работы ${work.id} нет файла`);
-      assert.ok(existsSync(path(work.file)), `файла ${work.file} нет`);
     }
   }
 
@@ -266,6 +265,28 @@ test('корпус: манифесты и индексы в своей форм�
       assert.ok(!literaryAuthors.has(excerpt.author) || (math.excerpts ?? []).every((row) => row.author === excerpt.author), 'авторы двух корпусов смешаны');
     }
   }
+});
+
+test('собранные тексты корпуса совпадают с манифестом: слова, знаки, sha256', async (t) => {
+  const corpora = [
+    { manifest: 'corpus/manifest.json', root: 'corpus/text' },
+    { manifest: 'corpus/math/manifest.json', root: 'corpus/math/shkalikov' },
+  ];
+  let checked = 0;
+  for (const corpus of corpora) {
+    if (!existsSync(path(corpus.manifest)) || !existsSync(path(corpus.root))) continue;
+    const manifest = await json(corpus.manifest);
+    for (const work of manifest.works ?? []) {
+      assert.ok(existsSync(path(work.file)), `файла ${work.file} нет, хотя каталог ${corpus.root} собран`);
+      const body = await readFile(path(work.file), 'utf8');
+      const digest = createHash('sha256').update(body, 'utf8').digest('hex');
+      assert.equal(digest, work.sha256, `sha256 работы ${work.id} не совпал с файлом`);
+      assert.equal(body.split(/\s+/u).filter(Boolean).length, work.words, `число слов работы ${work.id} не совпало с файлом`);
+      assert.equal(body.length, work.chars, `число знаков работы ${work.id} не совпало с файлом`);
+      checked += 1;
+    }
+  }
+  if (checked === 0) t.skip('тексты не собраны: их собирают tools/fetch_corpus.py и tools/fetch_math_corpus.py');
 });
 
 test('движок метрик: единая реализация на Python, второго расчёта на JS нет', async (t) => {

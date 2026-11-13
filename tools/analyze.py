@@ -238,10 +238,21 @@ def split_sentences(text):
     return [s.text.strip() for s in sentenize(text) if s.text.strip()]
 
 
+HEADING_RE = re.compile(r"^#{1,6}\s")
+
+
 def split_paragraphs(text):
+    """Paragraphs of prose. A markdown heading is a title, not a paragraph: counting
+    the line «## Пробили» as three words of prose would drop the mean paragraph
+    length of any structured document to a third of its real value."""
     paragraphs, buffer = [], []
     for line in text.splitlines():
         line = line.strip()
+        if HEADING_RE.match(line):
+            if buffer:
+                paragraphs.append(" ".join(buffer))
+                buffer = []
+            continue
         if line:
             buffer.append(line)
         elif buffer:

@@ -108,8 +108,8 @@
    },
    "punct.comma.per1000": {
     "min": 20,
-    "max": 100,
-    "source": "rule"
+    "max": 150,
+    "source": "corpus"
    },
    "para.len.mean": {
     "min": 25,

@@ -132,7 +132,7 @@ def test_targets_contract(targets, catalogue):
         for metric_id, gate in gates.items():
             assert metric_id in ids, "ворота ссылаются на неизвестную метрику %s" % metric_id
             assert set(gate) == {"min", "max", "source"}
-            assert gate["source"] == "rule"
+            assert gate["source"] in {"rule", "corpus", "author"}
             assert gate["min"] < gate["max"]
 
 
@@ -282,3 +282,10 @@ def test_missing_syntax_reports_unavailable(engine_module, catalogue, targets):
     prose = targets["profiles"]["prose_essay"]
     judged = [metric_id for metric_id in prose if metric_id in result["metrics"]]
     assert judged, "без синтаксиса не осталось ни одних ворот"
+
+
+def test_headings_are_not_paragraphs(engine_module):
+    """Заголовки разметки — не абзацы прозы: иначе средняя длина абзаца падает
+    до трёх слов у любого структурированного документа."""
+    text = "## Первый раздел\n\nПервый абзац прозы.\n\n## Второй раздел\n\nВторой абзац прозы."
+    assert engine_module.split_paragraphs(text) == ["Первый абзац прозы.", "Второй абзац прозы."]

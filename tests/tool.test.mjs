@@ -135,6 +135,71 @@ test('все действия инструмента отвечают разбо
   assert.ok(Array.isArray(answers['немало'].actions));
 });
 
+test('brief отдаёт шаблон того жанра, который назван', async () => {
+  const { ctx, tools } = fakeContext();
+  plugin.apply(ctx);
+  const tool = tools.get('style');
+  const expected = {
+    readme: 'templates/readme.md',
+    plan: 'templates/plan.md',
+    report: 'templates/report.md',
+    answer: 'templates/answer.md',
+    letter: 'templates/letter.md',
+    essay: 'templates/essay.md',
+    math: 'templates/math-article.md',
+  };
+  for (const [genre, path] of Object.entries(expected)) {
+    const parsed = JSON.parse(await tool.execute({ action: 'brief', genre }, {}));
+    assert.equal(parsed.template.path, path, `жанр ${genre}`);
+    assert.ok(parsed.template.body.length > 100, `жанр ${genre}: тело шаблона пустое`);
+  }
+});
+
+test('код, формулы и таблицы в замер не входят: считают прозу', async () => {
+  const { ctx, tools } = fakeContext();
+  plugin.apply(ctx);
+  const tool = tools.get('style');
+  const prose = 'Один короткий абзац прозы. И ещё одно предложение.';
+  const withMarkup = [
+    'Один короткий абзац прозы.',
+    '',
+    '```',
+    'const alpha = 1; const beta = 2;',
+    '```',
+    '',
+    '| столбец | второй |',
+    '|---|---|',
+    '| ячейка | ячейка |',
+    '',
+    'Формула $E = mc^2$ стоит в тексте.',
+    '',
+    'И ещё одно предложение.',
+  ].join('\n');
+  const control = 'Один короткий абзац прозы. Формула стоит в тексте. И ещё одно предложение.';
+  const markup = JSON.parse(await tool.execute({ action: 'measure', text: withMarkup }, {}));
+  const plain = JSON.parse(await tool.execute({ action: 'measure', text: control }, {}));
+  assert.equal(markup.counts.words, plain.counts.words, 'код, таблица или формула попали в счёт слов');
+  assert.equal(markup.counts.sentences, plain.counts.sentences, 'предложение с формулой пропало из счёта');
+});
+
+test('«ключевые слова» статьи не считаются усилителем', async () => {
+  const { ctx, tools } = fakeContext();
+  plugin.apply(ctx);
+  const tool = tools.get('style');
+  const good = JSON.parse(await tool.execute({
+    action: 'check',
+    profile: 'technical_doc',
+    text: 'Ключевые слова: отпечаток, метрика, корпус. Заголовок статьи и авторы стоят в начале текста.',
+  }, {}));
+  assert.ok(!good.violations.some((v) => v.rule === 'lang.amplifier.unmeasured'), 'термин «ключевые слова» принят за усилитель');
+  const bad = JSON.parse(await tool.execute({
+    action: 'check',
+    profile: 'technical_doc',
+    text: 'Это ключевой вопрос всей работы. Ответ на него стоит в конце.',
+  }, {}));
+  assert.ok(bad.violations.some((v) => v.rule === 'lang.amplifier.unmeasured'), 'настоящий усилитель не пойман');
+});
+
 test('check на испорченном тексте даёт нарушения с местами, на чистом — pass', () => {
   const dirty = [
     'Таким образом, в этом разделе мы разберём очень важный вопрос.',
