@@ -314,6 +314,31 @@ test('настройки читаются по mtime и меняют повед�
   assert.equal(rejected.problems.length, 3);
 });
 
+test('профиль по умолчанию меняется со страницы, выключенных ворот больше нет', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'style-fingerprint-'));
+  await mkdir(join(root, 'data'), { recursive: true });
+  // A file written by an older version still carries the two switches the code
+  // never read: they promised to turn the gate off and did nothing.
+  await writeFile(
+    join(root, 'data', 'settings.json'),
+    JSON.stringify({ version: 2, gate: { beforeDocument: true, beforeAnswer: true, minWordsForCheck: 45 } }),
+    'utf8',
+  );
+
+  const read = plugin.loadSettings(root);
+  assert.deepEqual(read.value.gate, { minWordsForCheck: 45 }, 'настройка без читающего переехала в действующие');
+
+  const written = await plugin.writeSettings({ defaultProfile: 'prose_essay', gate: { minWordsForCheck: 80, beforeAnswer: false } }, 'test', root);
+  assert.equal(written.ok, true);
+  assert.equal(written.settings.defaultProfile, 'prose_essay');
+  assert.deepEqual(written.settings.gate, { minWordsForCheck: 80 });
+
+  const stored = JSON.parse(await readFile(join(root, 'data', 'settings.json'), 'utf8'));
+  assert.equal(stored.defaultProfile, 'prose_essay');
+  assert.equal(stored.gate.beforeAnswer, undefined, 'мёртвая настройка осталась в файле');
+  assert.equal(stored.gate.beforeDocument, undefined, 'мёртвая настройка осталась в файле');
+});
+
 test('код, формулы и цитируемые примеры не судятся правилами', () => {
   const rules = {
     rules: [{
@@ -500,6 +525,8 @@ test('маршрут страницы отдаёт состояние, пров�
   assert.equal(state.status, 200);
   const body = await state.json();
   assert.ok(body.settings && typeof body.settings === 'object');
+  assert.ok(plugin.__test.PROFILE_IDS.includes(body.settings.defaultProfile), 'состояние не отдаёт профиль по умолчанию');
+  assert.deepEqual(Object.keys(body.settings.gate).sort(), ['minWordsForCheck'], 'в действующих настройках осталась настройка без читателя');
   assert.equal(body.profiles.length, 5);
   assert.equal(body.layers.length, 7);
   assert.ok(body.corpora && 'literary' in body.corpora && 'math' in body.corpora);

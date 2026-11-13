@@ -286,7 +286,9 @@ test('страница настроек: слот из каталога, ток�
   assert.match(client, /ctx\.slots\.inject\(\s*'settings\.plugins\.tab'/u, 'страница не зарегистрирована через ctx.slots.inject в settings.plugins.tab');
   assert.match(client, /ctx\.slots\.register\(/u);
   assert.match(client, /id:\s*'style-fingerprint'/u);
-  assert.match(client, /ctx\.theme\.overrideTokens/u, 'тема не идёт через ctx.theme.overrideTokens');
+  assert.match(client, /const theme = ctx\.get\('theme'\)/u, 'тема читается не через ctx.get: имя не в inject');
+  assert.match(client, /theme\.overrideTokens\('dsh-style-fingerprint'/u, 'тема не идёт через overrideTokens');
+  assert.match(client, /commit\(\{\s*defaultProfile:/u, 'профиль по умолчанию не меняется со страницы');
   assert.match(client, /var\(--dsw-radius-md\)/u, 'радиус не из токена --dsw-radius-md');
   assert.match(client, /min-height:36px/u, 'строка навигации не 36px');
   assert.match(client, /padding:7px 8px/u, 'у строки навигации не padding 7px 8px');

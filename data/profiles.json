@@ -64,8 +64,6 @@
     "margin": 0.15,
     "author": "both",
     "gate": {
-      "beforeDocument": true,
-      "beforeAnswer": true,
       "minWordsForCheck": 60
     }
   }

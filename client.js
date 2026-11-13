@@ -6,7 +6,7 @@
  * registers (`/plugins/style-fingerprint`), so a settings change applies
  * without a restart. Controls are the host primitives plus local markup;
  * every colour is a `--dsw-alias-*` token (or a token from this plugin's own
- * `ctx.theme.overrideTokens` layer whose value is such a token).
+ * override layer, registered through `ctx.get('theme')` and holding such a token).
  */
 window.__ModuleLoader__.load({
   id: 'dsh-style-fingerprint',
@@ -43,8 +43,10 @@ window.__ModuleLoader__.load({
         tabCheck: 'Проверка',
         title: 'Стилевой отпечаток',
         lead: 'Закон и шаблоны перед документом, проверка готового текста с местами и правками. Настройки действуют сразу, без перезапуска.',
-        profiles: 'Профили',
-        profilesHint: 'Проверка судит по профилю, который выбрал вызов. Выключенный профиль не проверяется.',
+        defaultProfile: 'Профиль по умолчанию',
+        defaultProfileHint: 'Его берёт вызов, который не назвал профиль: проверка без профиля и подстановки в разделах «Проверка» и «Пороги».',
+        allowedProfiles: 'Разрешённые профили',
+        allowedProfilesHint: 'Вызов называет один профиль; здесь перечислены те, что он может назвать. Выключенный профиль вызов не примет.',
         layers: 'Слои закона',
         layersHint: 'Слой выключен — его правила и файлы не попадают в brief и в проверку.',
         strict: 'Строгий режим',
@@ -122,8 +124,10 @@ window.__ModuleLoader__.load({
         tabCheck: 'Check',
         title: 'Style fingerprint',
         lead: 'Law and templates before a document, a check of the finished text with places and fixes. Settings apply immediately, without a restart.',
-        profiles: 'Profiles',
-        profilesHint: 'The check judges by the profile its call names. A profile that is off is not checked.',
+        defaultProfile: 'Default profile',
+        defaultProfileHint: 'A call that names no profile takes it: the check without a profile and the presets in the Check and Thresholds sections.',
+        allowedProfiles: 'Allowed profiles',
+        allowedProfilesHint: 'A call names one profile; these are the ones it may name. A profile that is off is refused.',
         layers: 'Law layers',
         layersHint: 'A layer that is off keeps its rules and files out of brief and out of the check.',
         strict: 'Strict mode',
@@ -340,7 +344,16 @@ window.__ModuleLoader__.load({
       const authorLabel = (id) => (id === 'tolstoy' ? t('authorTolstoy') : id === 'dostoevsky' ? t('authorDostoevsky') : id);
 
       return h('div', { className: 'dsfp_tabBody' },
-        h(Group, { title: t('profiles'), hint: t('profilesHint') },
+        h(Group, { title: t('defaultProfile'), hint: t('defaultProfileHint') },
+          h(Field, {
+            label: t('defaultProfile'),
+            children: h('select', {
+              className: 'dsfp_input dsfp_select',
+              value: values.defaultProfile || 'chat_answer',
+              onChange: (event) => commit({ defaultProfile: event.target.value }),
+            }, profileRows.map((profile) => h('option', { key: profile.id, value: profile.id }, profile.title || profile.id))),
+          })),
+        h(Group, { title: t('allowedProfiles'), hint: t('allowedProfilesHint') },
           h('div', { className: 'dsfp_grid' },
             profileRows.map((profile) => h(Checkbox, {
               key: profile.id,

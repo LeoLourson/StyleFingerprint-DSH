@@ -319,7 +319,7 @@ Python недоступен — проверка идёт по `rules.json`, р�
             "classification": true, "corpus": true, "math": true},
  "margin": 0.15, "author": "both", "pythonPath": "",
  "metricTargets": {},
- "gate": {"beforeDocument": true, "beforeAnswer": true, "minWordsForCheck": 60},
+ "gate": {"minWordsForCheck": 60},
  "changedAt": "…", "changedBy": "…"}
 ```
 

@@ -24,8 +24,6 @@
   "pythonPath": "",
   "metricTargets": {},
   "gate": {
-    "beforeDocument": true,
-    "beforeAnswer": true,
     "minWordsForCheck": 60
   },
   "changedAt": "2026-11-13T02:50:00+03:00",

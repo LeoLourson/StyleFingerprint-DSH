@@ -61,7 +61,7 @@ const BUILTIN_SETTINGS = {
   author: 'both',
   pythonPath: '',
   metricTargets: {},
-  gate: { beforeDocument: true, beforeAnswer: true, minWordsForCheck: 60 },
+  gate: { minWordsForCheck: 60 },
 };
 
 /**
@@ -263,7 +263,11 @@ export function loadSettings(root = ROOT) {
     if (raw.profiles && typeof raw.profiles[profile] === 'boolean') merged.profiles[profile] = raw.profiles[profile];
   }
   merged.layers = layerMapFrom(raw.layers !== undefined ? raw.layers : profileDefaults.layers);
-  merged.gate = { ...BUILTIN_SETTINGS.gate, ...(profileDefaults.gate || {}), ...(raw.gate || {}) };
+  // Only `minWordsForCheck` reaches the code, so only it survives the merge: a
+  // settings file written by an older version may still carry the two switches
+  // that promised to turn the gate off and never did.
+  const gate = { ...BUILTIN_SETTINGS.gate, ...(profileDefaults.gate || {}), ...(raw.gate || {}) };
+  merged.gate = { minWordsForCheck: gate.minWordsForCheck };
   merged.metricTargets = raw.metricTargets && typeof raw.metricTargets === 'object' ? raw.metricTargets : {};
   merged.margin = Number.isFinite(merged.margin) ? Math.min(1, Math.max(0, merged.margin)) : BUILTIN_SETTINGS.margin;
   merged.strict = merged.strict !== false;
@@ -1608,10 +1612,10 @@ function sanitizePatch(patch) {
     }
   }
   if (patch.gate && typeof patch.gate === 'object') {
-    clean.gate = {};
-    for (const key of ['beforeDocument', 'beforeAnswer']) if (typeof patch.gate[key] === 'boolean') clean.gate[key] = patch.gate[key];
     const minWords = Number(patch.gate.minWordsForCheck);
-    if (Number.isFinite(minWords) && minWords >= 0) clean.gate.minWordsForCheck = Math.round(minWords);
+    // A patch that carries no threshold leaves the stored one alone: the gate
+    // holds one setting, and dropping it for an unknown key would lose a value.
+    if (Number.isFinite(minWords) && minWords >= 0) clean.gate = { minWordsForCheck: Math.round(minWords) };
   }
   return { clean, problems };
 }
@@ -1631,7 +1635,8 @@ export async function writeSettings(patch, who = 'settings page', root = ROOT) {
         else merged[id] = target;
       }
       next.metricTargets = merged;
-    } else if (key === 'gate' || key === 'profiles' || key === 'layers') next[key] = { ...(base[key] || {}), ...value };
+    } else if (key === 'gate') next.gate = { ...value };
+    else if (key === 'profiles' || key === 'layers') next[key] = { ...(base[key] || {}), ...value };
     else next[key] = value;
   }
   next.version = base.version ?? 1;
