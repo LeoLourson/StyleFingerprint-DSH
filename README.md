@@ -66,6 +66,58 @@ node --test "tests/*.test.mjs"
 .venv\Scripts\python.exe -m pytest tests/test_metrics.py -q
 ```
 
+## Claude Code
+
+Тот же плагин работает в Claude Code без DSH. Адаптер `claude-code/cli.mjs` вызывает
+`apply(ctx)` плагина с подставным контекстом и отдаёт то, что плагин зарегистрировал, в
+формах Claude Code: инструмент `style` становится MCP-сервером на stdio, раздел промпта
+приходит хуком SessionStart, а скилл записывается в каталог скиллов. `index.js` для этого
+не меняется, npm-пакеты адаптеру не нужны. Движок метрик ставится так же, как для DSH:
+клон репозитория и `.venv` из раздела «Установка».
+
+Сервер записывается для всех проектов пользователя:
+
+```powershell
+claude mcp add --scope user style-fingerprint -- node C:/путь/к/dsh-style-fingerprint/claude-code/cli.mjs serve
+```
+
+В сессии инструмент называется `mcp__style-fingerprint__style`. Адаптер подставляет это
+имя в раздел промпта и в скилл, поэтому сервер нужно записать под именем
+`style-fingerprint`: при другом имени модель будет звать инструмент, которого нет.
+
+Скилл записывает команда из каталога плагина:
+
+```powershell
+node claude-code/cli.mjs skill "$env:USERPROFILE\.claude\skills\style"
+```
+
+Файл `SKILL.md` — копия текста скилла из `index.js`, поэтому после правки этого текста
+команду нужно повторить.
+
+Раздел промпта подключает хук в `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [{"type": "command", "command": "node \"C:/путь/к/dsh-style-fingerprint/claude-code/cli.mjs\" session-start"}]
+      }
+    ]
+  }
+}
+```
+
+Хук срабатывает при старте сессии, после `/clear` и после сжатия контекста и каждый раз
+читает раздел из `law/00-central.md`, так что правка закона попадает в следующую сессию
+без переустановки. MCP-серверы Claude Code запускает при старте сессии, поэтому
+инструмент появится в новой сессии, а не в той, где выполнена `claude mcp add`.
+
+Страница настроек в Claude Code недоступна: ей нужна служба `webServer` из DSH. Профиль по
+умолчанию и разрешённые профили меняются в `data/settings.json`, а действие `config`
+показывает, какие из них действуют.
+
 ## Быстрый старт
 
 Вызов из сессии называет жанр и читателя, ответ приходит в сокращённом виде:
@@ -188,7 +240,8 @@ tools/        сборка корпусов и движок метрик analyze
 requirements.txt  версии pymorphy3, natasha и torch для движка
 index.js      хост-половина: инструмент style, раздел промпта, скилл, мост к Python
 client.js     клиентская половина: страница Settings → Plugins
-tests/        node: инструмент, раскладка, клиент; pytest: метрики
+claude-code/  адаптер для Claude Code: MCP-сервер, хук SessionStart, запись скилла
+tests/        node: инструмент, раскладка, клиент, адаптер; pytest: метрики
 ```
 
 `CONTRACT.md` задаёт форматы файлов и API инструмента, `PLAN.md` — что построено и чем
@@ -217,6 +270,11 @@ tests/        node: инструмент, раскладка, клиент; pyte
 по жанру `readme` вернул шаблон `templates/readme.md`, набор node — 39 тестов (38 прошли,
 один пропущен), pytest — 16 тестов. Карточку в Settings → Plugins в живом приложении не
 проверяли: клиентская половина приходит вместе со страницей.
+
+16.11.2026 в Claude Code 2.1.325 на Windows 11: `claude mcp get style-fingerprint`
+показал сервер подключённым, `measure` через MCP вернул метрики движка, хук положил раздел
+стиля в контекст сессии, скилл `style` появился в списке скиллов, набор node — 42 теста
+(41 прошёл, один пропущен).
 
 ## Лицензия
 
